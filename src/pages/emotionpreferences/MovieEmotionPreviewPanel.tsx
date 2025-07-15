@@ -7,10 +7,12 @@ import MoviePreviewCard from "./MoviePreviewCard";
 
 interface MovieEmotionPreviewPanelProps {
 	emoVizEnabled?: boolean;
+	vizType?: "wheel" | "bars";
 }
 
 const MovieEmotionPreviewPanel: React.FC<MovieEmotionPreviewPanelProps> = ({
-	emoVizEnabled
+	emoVizEnabled,
+	vizType
 }) => {
 
 	const selectedMovie = useRecoilValue(activeEmotionMovieSelector);
@@ -37,7 +39,7 @@ const MovieEmotionPreviewPanel: React.FC<MovieEmotionPreviewPanelProps> = ({
 						<h5>Emotional signature</h5>
 					</Row>
 					<Row className="mt-3 centered-content">
-						<EmotionStats movie={selectedMovie} />
+						<EmotionStats movie={selectedMovie} vizType={vizType}/>
 					</Row>
 				</>
 			}

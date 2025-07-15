@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { Col, Container, Row, Spinner } from "react-bootstrap";
+import { Col, Container, FormGroup, FormLabel, FormSelect, Row, Spinner } from "react-bootstrap";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { CurrentStep, Participant, StudyStep, useStudy } from "rssa-api";
+import { WarningDialog } from "../../components/dialogs/warningDialog";
 import Footer from "../../components/Footer";
 import Header from "../../components/Header";
 import { MovieRating } from "../../components/moviegrid/moviegriditem/MovieGridItem.types";
@@ -15,7 +16,6 @@ import { StudyPageProps } from "../StudyPage.types";
 import EmotionToggle from "./EmotionToggle";
 import MovieEmotionPreviewPanel from "./MovieEmotionPreviewPanel";
 import MovieListPanel from "./MovieListPanel";
-import { WarningDialog } from "../../components/dialogs/warningDialog";
 
 
 
@@ -52,6 +52,7 @@ const EmotionPreferences: React.FC<StudyPageProps> = ({
 	const [recCriteria, setRecCriteria] = useState('')
 	const [loading, setLoading] = useState<boolean>(false);
 	const [nextButtonDisabled, setNextButtonDisabled] = useState<boolean>(true);
+	const [emoVizType, setEmoVizType] = useState<"wheel" | "bars">("wheel");
 
 	// FIXME:
 	// Temporary state to get condition from URL for development testing
@@ -153,6 +154,21 @@ const EmotionPreferences: React.FC<StudyPageProps> = ({
 			<Row>
 				<Header title={studyStep?.name} content={studyStep?.description} />
 			</Row>
+			<Row className="mb-3">
+				<FormGroup className="d-flex align-items-center">
+					<FormLabel className="w-25">
+						Select Viz Type
+					</FormLabel>
+					<FormSelect className="w-25"
+						value={emoVizType}
+						onChange={(e) => {
+							setEmoVizType(e.target.value as "wheel" | "bars");
+						}}>
+						<option value="bars">Emotion bars</option>
+						<option value="wheel">Plutchik Wheel of Emotions</option>
+					</FormSelect>
+				</FormGroup>
+			</Row>
 			<WarningDialog show={showWarning} title={"Are you sure?"}
 				message={`<p>Finalizing will freeze your current emotion settings.</p> 
 								<p>This action cannot be undone.</p>`}
@@ -187,7 +203,7 @@ const EmotionPreferences: React.FC<StudyPageProps> = ({
 				</Col>
 				<Col id="moviePosterPreview">
 					<div className="d-flex mx-auto moviePreviewPanel">
-						<MovieEmotionPreviewPanel emoVizEnabled={emoVizEnabled} />
+						<MovieEmotionPreviewPanel emoVizEnabled={emoVizEnabled} vizType={emoVizType} />
 					</div>
 				</Col>
 			</Row>
