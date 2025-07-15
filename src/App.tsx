@@ -8,12 +8,20 @@ import {
 	StudyStep,
 	useStudy
 } from 'rssa-api';
+import { WarningDialog } from './components/dialogs/warningDialog';
+import DemographicsPage from './pages/DemographicsPage';
+import FeedbackPage from './pages/FeedbackPage';
 import FinalPage from './pages/FinalPage';
+import MovieRatingPage from './pages/MovieRatingPage';
+import StudyMap from './pages/Studymap';
+import Survey from './pages/SurveyPage';
+import Welcome from './pages/Welcome';
+import EmotionPreferences from './pages/emotionpreferences/EmotionPreferences';
 import { participantState, studyStepState } from './states/studyState';
 import './styles/App.css';
+import './styles/components.css';
+import './styles/main.css';
 import { RETRY_DELAYS_MS, STRINGS } from './utils/constants';
-import { WarningDialog } from './components/dialogs/warningDialog';
-import Welcome from './pages/Welcome';
 
 
 const customBreakpoints = {
@@ -189,28 +197,28 @@ function App() {
 						</Toast>
 					</ToastContainer>
 				)}
-				<Router basename='/preference-community'>
+				<Router basename='/ers-v2'>
 					<Suspense fallback={<div>Loading...</div>}>
 						<Routes>
 							<Route path="/" element={
 								<Welcome
-									next="/demographics"
+									next="/studyoverview"
 									checkpointUrl={checkpointUrl}
 									setNewParticipant={setParticipant}
 									onStepUpdate={handleStepUpdate}
 									sizeWarning={showWarning}
 								/>
 							} />
-							{/* <Route path="/presurvey" element={
-								<Survey
-									next="/systemintro"
+							<Route path="/studyoverview" element={
+								<StudyMap
+									next="/presurvey"
 									checkpointUrl={checkpointUrl}
 									onStepUpdate={handleStepUpdate}
 									sizeWarning={showWarning}
 								/>
 							} />
-							<Route path="/systemintro" element={
-								<SystemIntro
+							<Route path="/presurvey" element={
+								<Survey
 									next="/ratemovies"
 									checkpointUrl={checkpointUrl}
 									onStepUpdate={handleStepUpdate}
@@ -219,30 +227,14 @@ function App() {
 							} />
 							<Route path="/ratemovies" element={
 								<MovieRatingPage
-									next="/advisors"
+									next="/recommendations"
 									checkpointUrl={checkpointUrl}
 									onStepUpdate={handleStepUpdate}
 									sizeWarning={showWarning}
 								/>
 							} />
-							<Route path="/advisors" element={
-								<AdvisorsPage
-									next="/postsurvey"
-									checkpointUrl={checkpointUrl}
-									onStepUpdate={handleStepUpdate}
-									sizeWarning={showWarning}
-								/>
-							} />
-							<Route path="/demographics" element={
-								<Demographics
-									next="/presurvey"
-									checkpointUrl={checkpointUrl}
-									onStepUpdate={handleStepUpdate}
-									sizeWarning={showWarning}
-								/>
-							} />
-							<Route path="/postsurvey" element={
-								<Survey
+							<Route path="/recommendations" element={
+								<EmotionPreferences
 									next="/feedback"
 									checkpointUrl={checkpointUrl}
 									onStepUpdate={handleStepUpdate}
@@ -252,13 +244,28 @@ function App() {
 
 							<Route path="/feedback" element={
 								<FeedbackPage
+									next="/postsurvey"
+									checkpointUrl={checkpointUrl}
+									onStepUpdate={handleStepUpdate}
+									sizeWarning={showWarning}
+								/>
+							} />
+							<Route path="/postsurvey" element={
+								<Survey
+									next="/demographics"
+									checkpointUrl={checkpointUrl}
+									onStepUpdate={handleStepUpdate}
+									sizeWarning={showWarning}
+								/>
+							} />
+							<Route path="/demographics" element={
+								<DemographicsPage
 									next="/endstudy"
 									checkpointUrl={checkpointUrl}
 									onStepUpdate={handleStepUpdate}
 									sizeWarning={showWarning}
 								/>
-							} /> */}
-
+							} />
 							<Route path="/endstudy" element={
 								<FinalPage
 									next="/"

@@ -23,6 +23,7 @@ const Welcome: React.FC<InitStudyPageProps> = ({
 
 	const studyStep: StudyStep | null = useRecoilValue(studyStepState);
 	const [show, setShowInformedConsent] = useState<boolean>(false);
+	const [isLoading, setIsLoading] = useState<boolean>(false);
 
 	const { studyApi } = useStudy();
 	const navigate = useNavigate();
@@ -39,6 +40,7 @@ const Welcome: React.FC<InitStudyPageProps> = ({
 	const consentCallbackHandler = async (consent: boolean) => {
 		if (consent && studyStep) {
 			try {
+				setIsLoading(true);
 				const response = await studyApi.post<NewParticipant, Participant>('participants/', {
 					study_id: studyStep.study_id,
 					external_id: 'test_user', // FIXME: change to actual platform id
@@ -55,9 +57,11 @@ const Welcome: React.FC<InitStudyPageProps> = ({
 				navigate(next);
 			} catch (error) {
 				console.error("Error creating participant or updating step", error);
+			} finally {
+				setShowInformedConsent(false);
+				setIsLoading(false);
 			}
 		}
-		setShowInformedConsent(false);
 	}
 
 	return (
@@ -102,8 +106,9 @@ const Welcome: React.FC<InitStudyPageProps> = ({
 			</Row>
 
 			<InformedConsentModal
-				show={showInformedConsent}
+				show={show}
 				consentCallback={consentCallbackHandler}
+				isLoading={isLoading}
 				onClose={setShowInformedConsent}
 			/>
 			<Row>
