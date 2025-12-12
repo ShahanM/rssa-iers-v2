@@ -1,143 +1,124 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Button, Container, Form, Row } from "react-bootstrap";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useRecoilValue } from "recoil";
-import { CurrentStep, Participant, StudyStep, useStudy } from "rssa-api";
+import { useOutletContext } from "react-router-dom";
+import { useStudy } from "rssa-api";
+import { StudyLayoutContextType, useNextButtonControl, useStepCompletion } from "rssa-study-template";
 import { WarningDialog } from "../components/dialogs/warningDialog";
-import Footer from "../components/Footer";
-import Header from "../components/Header";
-import { participantState, studyStepState } from "../states/studyState";
-import { StudyPageProps } from "./StudyPage.types";
+import { useMutation } from "@tanstack/react-query";
+import clsx from "clsx";
 
-
-export type Feedback = {
-	participant_id: string;
-	feedback_text: string;
-	feedback_type: string;
-	feedback_category: string;
+export type TextResponsePayload = {
+	study_step_id: string;
+	study_step_page_id?: string;
+	context_tag: string;
+	response_text: string;
 };
 
+const FeedbackPage: React.FC = () => {
 
-const FeedbackPage: React.FC<StudyPageProps> = ({
-	next,
-	checkpointUrl,
-	onStepUpdate
-}) => {
-
-	const participant: Participant | null = useRecoilValue(participantState);
-	const studyStep: StudyStep | null = useRecoilValue(studyStepState);
-
+	const { studyStep, resetNextButton } = useOutletContext<StudyLayoutContextType>();
+	const { setButtonControl } = useNextButtonControl();
+	const { setIsStepComplete } = useStepCompletion();
 	const { studyApi } = useStudy();
-	const navigate = useNavigate();
-	const location = useLocation();
 
-	const [loading, setLoading] = useState<boolean>(false);
-	const [submitButtonDisabled, setSubmitButtonDisabled] = useState<boolean>(false);
-	const [nextButtonDisabled, setNextButtonDisabled] = useState<boolean>(true);
 	const [showWarning, setShowWarning] = useState<boolean>(false);
 	const feedbackRef = useRef<HTMLTextAreaElement>(null);
 
-
+	// Disable Next button initially
 	useEffect(() => {
-		if (checkpointUrl !== '/' && checkpointUrl !== location.pathname) {
-			navigate(checkpointUrl);
-		}
-	}, [checkpointUrl, location.pathname, navigate]);
+		setButtonControl(prev => ({ ...prev, isDisabled: true }));
+		return () => resetNextButton(); // Cleanup on unmount
+	}, [setButtonControl, resetNextButton]);
 
-	const submitFeedback = useCallback(async (event: React.MouseEvent<HTMLButtonElement>) => {
-		if (!participant || !studyStep) {
-			console.warn("SurveyPage or participant is undefined in submitFeedback.");
-			return null;
+	const feedbackMutation = useMutation({
+		mutationKey: ['FreeformTextResponse'],
+		mutationFn: async (payload: TextResponsePayload) => studyApi.post<TextResponsePayload, null>('responses/texts/', payload),
+		onSuccess: () => {
+			setIsStepComplete(true);
+			resetNextButton(); // Enable Standard Next Button
+		},
+		onError: (error) => {
+			console.error("Error submitting feedback:", error);
+			// Re-disable if it failed
+			setButtonControl(prev => ({ ...prev, isDisabled: true }));
 		}
+	});
+
+	const submitFeedback = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
 		event.preventDefault();
 		if (feedbackRef.current) {
 			const feedbackText = feedbackRef.current.value;
 			if (feedbackText.length === 0) {
 				setShowWarning(true);
 				return;
-			} else {
-				setShowWarning(false);
-				setLoading(true);
-				console.log("Submitting feedback:", feedbackText);
-				try {
-					await studyApi.post<Feedback, null>(`feedbacks`, {
-						participant_id: participant.id,
-						feedback_text: feedbackText,
-						feedback_type: 'study',
-						feedback_category: 'participant general feedback'
-					});
-					setSubmitButtonDisabled(true);
-					setNextButtonDisabled(false);
-
-				} catch (error) {
-					console.error("Error submitting feedback:", error);
-					setSubmitButtonDisabled(false);
-					setNextButtonDisabled(true);
-				} finally {
-					setLoading(false);
-				}
 			}
+
+			feedbackMutation.mutate({
+				study_step_id: studyStep.id,
+				context_tag: 'rssa_ers',
+				response_text: feedbackText
+			});
 		}
-	}, [studyApi, participant, studyStep]);
+	}, [feedbackMutation, studyStep]);
 
 	const handleWarningConfirm = () => {
 		setShowWarning(false);
-		setSubmitButtonDisabled(true);
-		setNextButtonDisabled(false);
+		setIsStepComplete(true);
+		resetNextButton(); // Enable Standard Next Button
 	}
 
-	const handleNextBtn = useCallback(async () => {
-		if (!participant || !studyStep) {
-			console.error("Participant or study step is not defined.");
-			return;
-		}
-		try {
-			const nextRouteStep = await studyApi.post<CurrentStep, StudyStep>('studies/steps/next', {
-				current_step_id: participant.current_step
-			});
-			onStepUpdate(nextRouteStep, participant, next);
-			navigate(next);
-		} catch (error) {
-			console.error("Error fetching next step:", error);
-			// Handle error, e.g., show a message to the user
-		} finally {
-			setLoading(false);
-		}
-	}, [studyApi, participant, onStepUpdate, next, navigate, studyStep]);
-
+	const isSubmitting = feedbackMutation.isPending;
+	const isSuccess = feedbackMutation.isSuccess;
 
 	return (
-		<Container fluid>
+		<div className="container mx-auto px-4">
 			{showWarning && <WarningDialog show={showWarning} confirmCallback={handleWarningConfirm}
 				title="Empty feedback" message="<p>You hardly wrote anything.</p><p>Are you sure you are done?</p>"
 				confirmText="Yes, I'm done"
+				cancelCallback={() => setShowWarning(false)}
 			/>}
-			<Row>
-				<Header title={studyStep?.name} content={studyStep?.description} />
-			</Row>
-			<Row className="feedback-body">
-				<Form>
-					<Form.Group className="mb-3" controlId="feedback">
-						<Form.Label>
-							<p>Thank you for participating in our study!</p>
+			<div className="mb-6">
+				{/* Header handled by layout */}
+			</div>
+			<div className="feedback-body mb-6">
+				<form>
+					<div className="mb-4">
+						<label htmlFor="feedback" className="block text-gray-700 text-sm font-bold mb-2">
+							<p className="mb-2">Thank you for participating in our study!</p>
 							<p>
 								Tell us about your experience with the study.
 								This is a research study and your feedback is
 								not only important to us, but also greatly
 								appreciated.
 							</p>
-						</Form.Label>
-						<Form.Control as="textarea" rows={4} ref={feedbackRef} disabled={submitButtonDisabled} />
-					</Form.Group>
-					<Button variant="ers" onClick={submitFeedback} disabled={submitButtonDisabled || loading}>
-						Submit
-					</Button>
-				</Form>
-			</Row>
-			<Row>
-				<Footer callback={handleNextBtn} disabled={nextButtonDisabled} />
-			</Row>
-		</Container>
+						</label>
+						<textarea
+							id="feedback"
+							rows={4}
+							ref={feedbackRef}
+							disabled={isSubmitting || isSuccess}
+							className={clsx(
+								"shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline",
+								(isSubmitting || isSuccess) && "bg-gray-100"
+							)}
+						/>
+					</div>
+					<button
+						type="button"
+						onClick={submitFeedback}
+						disabled={isSubmitting || isSuccess}
+						className={clsx(
+							"px-4 py-2 rounded font-bold text-white transition-colors",
+							isSubmitting || isSuccess ? 'bg-gray-400 cursor-not-allowed' : 'bg-amber-500 hover:bg-amber-600'
+						)}
+					>
+						{isSubmitting ? 'Submitting...' : isSuccess ? 'Submitted' : 'Submit'}
+					</button>
+				</form>
+			</div>
+			<div className="mb-6">
+				{/* Footer handled by layout */}
+			</div>
+		</div>
 	);
 }
 

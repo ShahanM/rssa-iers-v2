@@ -1,4 +1,4 @@
-import { Movie } from "../components/moviegrid/moviegriditem/MovieGridItem.types";
+import { Movie } from "rssa-study-template";
 
 
 export type MovieEmotions = {

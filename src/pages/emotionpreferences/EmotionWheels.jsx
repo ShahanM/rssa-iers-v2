@@ -1,4 +1,4 @@
-import { Row } from "react-bootstrap";
+
 import WheelOfEmotions from "./WheelOfEmotions";
 
 export default function EmotionWheels({ emotions, movie }) {
@@ -50,10 +50,10 @@ export default function EmotionWheels({ emotions, movie }) {
 
 	return (
 		<div>
-			<Row>
+			<div className="flex flex-wrap">
 				{/* Render the WheelOfEmotions with normalized data */}
 				<WheelOfEmotions data={emotionData} size={200} /> {/* Adjust the size as needed */}
-			</Row>
+			</div>
 		</div>
 	);
 }

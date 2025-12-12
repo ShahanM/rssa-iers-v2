@@ -1,217 +1,233 @@
-import { useCallback, useEffect, useState } from "react";
-import { Col, Container, FormGroup, FormLabel, FormSelect, Row, Spinner } from "react-bootstrap";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { useRecoilState, useRecoilValue } from "recoil";
-import { CurrentStep, Participant, StudyStep, useStudy } from "rssa-api";
+import { useMemo, useState, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useStudy } from "rssa-api";
+import { StudyLayoutContextType } from "rssa-study-template";
+import { useOutletContext, useNavigate } from "react-router-dom";
 import { WarningDialog } from "../../components/dialogs/warningDialog";
-import Footer from "../../components/Footer";
-import Header from "../../components/Header";
-import { MovieRating } from "../../components/moviegrid/moviegriditem/MovieGridItem.types";
-import { emotionMovieMapState } from "../../states/emotionmoviestate";
-import { ratedMoviesState } from "../../states/ratedmoviestate";
-import { participantState, studyStepState } from "../../states/studyState";
+
 import { EmotionMovieDetails } from "../../types/movies";
-import { studyConditions } from "../../utils/constants";
-import { StudyPageProps } from "../StudyPage.types";
+import { studyConditions, emotionsDict } from "../../utils/constants";
 import EmotionToggle from "./EmotionToggle";
 import MovieEmotionPreviewPanel from "./MovieEmotionPreviewPanel";
 import MovieListPanel from "./MovieListPanel";
+import { useNextButtonControl, useStepCompletion } from "rssa-study-template";
 
+export type EmotionStatusValue = string;
 
+const initialEmotionMap = new Map<string, EmotionStatusValue>(Object.entries(emotionsDict));
 
-interface LocationState {
-	ratedMovies?: { [key: number]: MovieRating };
-}
-
-type ApiMovieRating = {
-	item_id: number;
-	rating: number;
-}
-type PreferenceRequestObject = {
-	user_id: string;
-	user_condition: string;
-	is_baseline: boolean;
-	ratings: ApiMovieRating[];
-}
-
-const EmotionPreferences: React.FC<StudyPageProps> = ({
-	next,
-	checkpointUrl,
-	onStepUpdate,
-	sizeWarning
-}) => {
-	const participant: Participant | null = useRecoilValue(participantState);
-	const studyStep: StudyStep | null = useRecoilValue(studyStepState);
-	const ratedMovies: Map<string, MovieRating> = useRecoilValue(ratedMoviesState);
-	const [movies, setMovies] = useRecoilState(emotionMovieMapState);
-
+const EmotionPreferencesContent: React.FC = () => {
+	const { studyStep, resetNextButton } = useOutletContext<StudyLayoutContextType>();
+	const { setIsStepComplete } = useStepCompletion();
 	const { studyApi } = useStudy();
 	const navigate = useNavigate();
-	const location = useLocation();
 
-	const [recCriteria, setRecCriteria] = useState('')
-	const [loading, setLoading] = useState<boolean>(false);
-	const [nextButtonDisabled, setNextButtonDisabled] = useState<boolean>(true);
+	// Local State
+	const [emotionMap, setEmotionMap] = useState<Map<string, EmotionStatusValue>>(initialEmotionMap);
+	const [activeMovieId, setActiveMovieId] = useState<string | null>(null);
+	const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
+
 	const [emoVizType, setEmoVizType] = useState<"wheel" | "bars">("wheel");
+	const [isToggleDone, setIsToggleDone] = useState(false);
+	const [showWarning, setShowWarning] = useState(false);
+	const [selectButtonEnabled, setSelectButtonEnabled] = useState(false); // Can be derived from isToggleDone?
 
-	// FIXME:
-	// Temporary state to get condition from URL for development testing
-	// NOTE: Condition 5 is Baseline in the test study, so we will get TopN
-	const [searchParams, setSearchParams] = useSearchParams();
-
-	const condition = 5;
+	// Constants
+	const condition = 5; // Hardcoded as per original
 	const emoVizEnabled = studyConditions[condition].emoVizEnabled;
 	const emoTogglesEnabled = studyConditions[condition].emoTogglesEnabled;
 	const defaultEmoWeightLabel = studyConditions[condition].defaultEmoWeightLabel;
 
-	const [isToggleDone, setIsToggleDone] = useState(false);
-	const [showWarning, setShowWarning] = useState(false);
-	const [selectButtonEnabled, setSelectButtonEnabled] = useState(false);
+	// Prepare Fetch Payload
+	const contextData = useMemo(() => {
+		// Check if all are ignored (default state)
+		const isAllIgnored = Array.from(emotionMap.values()).every(val => val === 'ignore');
+		if (isAllIgnored) {
+			return {};
+		}
+
+		const emotionInput = Array.from(emotionMap.entries()).map(([emotion, weight]) => ({
+			emotion: emotion.toLowerCase(),
+			weight
+		}));
+		return {
+			emotion_input: emotionInput,
+			step_id: studyStep?.id
+		};
+	}, [emotionMap, studyStep]);
+
+	// Fetch Recommendations
+	// Debug Logging
+	useEffect(() => {
+		console.log("EmotionPreferences Debug:");
+		console.log("studyStep:", studyStep);
+		console.log("contextData:", contextData);
+		console.log("Query Enabled:", !!studyStep);
+	}, [studyStep, contextData]);
+
+	const { data: moviesList = [], isLoading, isFetching, error } = useQuery<EmotionMovieDetails[]>({
+		queryKey: ['recommendations', contextData],
+		queryFn: async () => {
+			try {
+				console.log(">>> STARTING QUERY FN <<<");
+				console.log("Fetching recommendations with:", contextData);
+				const response = await studyApi.post<any, EmotionMovieDetails[]>('recommendations/', contextData);
+				console.log(">>> QUERY SUCCESS <<<");
+				console.log("Learned Recommendations response:", response);
+				return response;
+			} catch (err) {
+				console.error(">>> QUERY FAILED <<<", err);
+				throw err;
+			}
+		},
+		enabled: !!studyStep,
+		staleTime: 0, // Force fetch every time
+		refetchOnWindowFocus: false, // Optional: reduce noise
+	});
+
+	const loading = isLoading || isFetching;
 
 	useEffect(() => {
-		if (checkpointUrl !== '/' && checkpointUrl !== location.pathname) {
-			navigate(checkpointUrl);
-		}
-	}, [checkpointUrl, location.pathname, navigate]);
+		if (error) console.error("Query Error State:", error);
+	}, [error]);
 
-	const getRecommendations = useCallback(async () => {
-		if (!participant || !studyStep || ratedMovies.size === 0) {
-			console.error("Participant or study step is not defined.");
-			return;
-		}
-		setLoading(true);
-		try {
-			console.log("Fetching recommendations with rated movies:", ratedMovies);
-			const ratingsReqObj = [...ratedMovies.values()].map(rating => {
-				return { item_id: rating.movielens_id, rating: rating.rating };
-			});
-			console.log("Ratings request object:", ratingsReqObj);
-			const responseItems: any = await studyApi.post<PreferenceRequestObject, EmotionMovieDetails[]>(
-				"recommendations/ers", {
-				user_id: participant.id,
-				user_condition: participant.condition_id,
-				is_baseline: parseInt(searchParams.get('cond') || '1') === 5,
-				ratings: [...ratedMovies.values()].map(rating => {
-					return { item_id: rating.movielens_id, rating: rating.rating };
-				})
-			});
-			let itemMap = new Map<string, EmotionMovieDetails>();
-			for (let item of responseItems) { itemMap.set(item.id, item); }
-			setMovies(itemMap);
-		} catch (err: any) {
-			console.error("Error fetching recommendations", err);
-		} finally {
-			setLoading(false);
-		}
-	}, [studyApi, searchParams, participant, studyStep, setMovies, ratedMovies]);
+	// Navigation Logic
 
-	useEffect(() => { getRecommendations(); }, [getRecommendations]);
 
-	const handleNextBtn = async () => {
-		if (!participant || !studyStep) {
-			console.error("Participant or study step is not defined.");
-			return;
-		}
+	const handleFinalize = useCallback(() => {
+		setShowWarning(true);
+	}, []);
+
+	// Button Control
+	const { setButtonControl } = useNextButtonControl();
+
+	// Effect to control the Next Button
+	useEffect(() => {
+		if (loading) return;
+
 		if (!isToggleDone) {
-			setShowWarning(true);
-			return;
-		}
-		try {
-			const nextStep: StudyStep = await studyApi.post<CurrentStep, StudyStep>('studies/steps/next', {
-				current_step_id: participant.current_step
+			setButtonControl({
+				label: "Finalize",
+				action: handleFinalize,
+				isDisabled: false,
 			});
-			onStepUpdate(nextStep, participant, next);
-			navigate(next);
-		} catch (error) {
-			console.error("Error getting next to updating study progress", error);
+		} else {
+			resetNextButton();
 		}
-	}
+		return () => {
+			resetNextButton();
+		};
+	}, [loading, isToggleDone, setButtonControl, handleFinalize, resetNextButton]);
+
+	// Derived State
+	const movies = useMemo(() => {
+		const map = new Map<string, EmotionMovieDetails>();
+		moviesList.forEach(m => map.set(m.id, m));
+		return map;
+	}, [moviesList]);
+
+	const activeMovie = useMemo(() => {
+		if (activeMovieId && movies.has(activeMovieId)) {
+			return movies.get(activeMovieId) || null;
+		}
+		return null;
+	}, [activeMovieId, movies]);
 
 	const confirmWarning = () => {
 		setShowWarning(false);
 		setIsToggleDone(true);
-	}
+		setSelectButtonEnabled(true);
+		setIsStepComplete(true);
+	};
 
 	const cancelWarning = () => {
 		setShowWarning(false);
-	}
+	};
 
-	useEffect(() => {
-		if (isToggleDone) {
-			setSelectButtonEnabled(true);
-		}
-	}, [isToggleDone]);
-
-	if (!movies || movies.size === 0) {
-		return (
-			<h1>Loading</h1>
-		);
-	}
 
 
 	return (
-		<Container>
-			<Row>
-				<Header title={studyStep?.name} content={studyStep?.description} />
-			</Row>
-			<Row className="mb-3">
-				<FormGroup className="d-flex align-items-center">
-					<FormLabel className="w-25">
+		<div className="container mx-auto px-4">
+			<div className="mb-6">
+				{/* Header handled by StudyLayout */}
+			</div>
+			<div className="mb-6">
+				<div className="flex items-center">
+					<label className="w-1/4 font-medium text-gray-700">
 						Select Viz Type
-					</FormLabel>
-					<FormSelect className="w-25"
+					</label>
+					<select className="w-1/4 mt-1 block rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-amber-500 focus:outline-none focus:ring-amber-500 sm:text-sm"
 						value={emoVizType}
 						onChange={(e) => {
 							setEmoVizType(e.target.value as "wheel" | "bars");
 						}}>
 						<option value="bars">Emotion bars</option>
 						<option value="wheel">Plutchik Wheel of Emotions</option>
-					</FormSelect>
-				</FormGroup>
-			</Row>
+					</select>
+				</div>
+			</div>
+
 			<WarningDialog show={showWarning} title={"Are you sure?"}
 				message={`<p>Finalizing will freeze your current emotion settings.</p> 
 								<p>This action cannot be undone.</p>`}
 				confirmCallback={confirmWarning}
 				confirmText={"Confirm"}
 				cancelCallback={cancelWarning} />
-			<Row style={{ height: "fit-content" }}>
-				<Col id="emotionPanel">
+
+			<div className="flex flex-wrap -mx-4" style={{ height: "fit-content" }}>
+				{/* Left Panel: Toggles */}
+				<div id="emotionPanel" className="w-full lg:w-4/12 px-4">
 					<div className="emoPrefControlPanel">
 						{emoTogglesEnabled &&
-							<Row>
+							<div>
 								<EmotionToggle
 									isFinal={isToggleDone}
-									defaultLabel={defaultEmoWeightLabel} />
-							</Row>
+									defaultLabel={defaultEmoWeightLabel}
+									emotionMap={emotionMap}
+									setEmotionMap={setEmotionMap}
+								/>
+							</div>
 						}
 					</div>
-				</Col>
-				<Col id="moviePanel">
+				</div>
+
+				{/* Middle Panel: Recommendations */}
+				<div id="moviePanel" className="w-full lg:w-4/12 px-4 relative">
 					{loading ?
-						<div className="movieListPanelOverlay" style={{
-							position: "absolute", width: "415px", marginTop: "99px",
-							height: "504px", borderRadius: "5px",
-							zIndex: "999", display: "block", backgroundColor: "rgba(72, 72, 72, 0.8)"
-						}}>
-							<Spinner animation="border" role="status" style={{ margin: "300px auto", color: "white" }}>
-								<span className="sr-only">Loading...</span>
-							</Spinner>
+						<div className="absolute inset-0 bg-gray-800 bg-opacity-80 z-50 rounded-md flex items-center justify-center" style={{ marginTop: "99px", height: "504px" }}>
+							<svg className="animate-spin h-10 w-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+								<circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+								<path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+							</svg>
 						</div>
 						: ""}
-					<MovieListPanel id="leftPanel" panelTitle={'Recommendations'} selectButtonEnabled={selectButtonEnabled} />
-				</Col>
-				<Col id="moviePosterPreview">
-					<div className="d-flex mx-auto moviePreviewPanel">
-						<MovieEmotionPreviewPanel emoVizEnabled={emoVizEnabled} vizType={emoVizType} />
+					<MovieListPanel
+						id="leftPanel"
+						panelTitle={'Recommendations'}
+						selectButtonEnabled={selectButtonEnabled}
+						movies={movies}
+						emotionMap={emotionMap}
+						activeMovieId={activeMovieId}
+						setActiveMovieId={setActiveMovieId}
+						selectedMovieId={selectedMovieId}
+						setSelectedMovieId={setSelectedMovieId}
+					/>
+				</div>
+
+				{/* Right Panel: Preview */}
+				<div id="moviePosterPreview" className="w-full lg:w-4/12 px-4">
+					<div className="flex mx-auto moviePreviewPanel justify-center">
+						<MovieEmotionPreviewPanel
+							emoVizEnabled={emoVizEnabled}
+							vizType={emoVizType}
+							activeMovie={activeMovie}
+						/>
 					</div>
-				</Col>
-			</Row>
-			<Row>
-				<Footer callback={handleNextBtn} text={`${isToggleDone ? "Next" : "Finalize"}`} />
-			</Row>
-		</Container>
+				</div>
+			</div>
+		</div>
 	);
 };
 
-export default EmotionPreferences;
+// Simplified Export (No Provider)
+export default EmotionPreferencesContent;

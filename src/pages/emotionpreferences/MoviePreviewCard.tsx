@@ -1,52 +1,46 @@
-import Col from 'react-bootstrap/Col';
-import Container from 'react-bootstrap/Container';
-import Image from 'react-bootstrap/Image';
-import Row from 'react-bootstrap/Row';
-import { useRecoilValue } from 'recoil';
-import { activeEmotionMovieSelector } from '../../states/emotionmoviestate';
+import { EmotionMovieDetails } from "../../types/movies";
 
 interface MoviePreviewCardProps {
+	activeMovie: EmotionMovieDetails | null;
 }
 
 
-const MoviePreviewCard: React.FC<MoviePreviewCardProps> = () => {
+const MoviePreviewCard: React.FC<MoviePreviewCardProps> = ({ activeMovie }) => {
 
-	const selectedMovie = useRecoilValue(activeEmotionMovieSelector);
-
-	if (!selectedMovie) {
+	if (!activeMovie) {
 		return (
-			<Container className="moviePreviewCard">
-				<Row>
-					<Col>
+			<div className="moviePreviewCard container mx-auto">
+				<div className="flex">
+					<div className="w-full">
 						<p>No movie selected</p>
-					</Col>
-				</Row>
-			</Container>
+					</div>
+				</div>
+			</div>
 		);
 	}
 
 	return (
-		<Container className="moviePreviewCard">
-			<Row>
-				<Col>
+		<div className="moviePreviewCard container mx-auto">
+			<div className="flex">
+				<div className="w-1/2 px-2">
 					<div className="movie-preview-card-image">
-						<Image src={selectedMovie.poster}
-							alt={"Post of the movie " + selectedMovie.title}
-							className="d-flex mx-auto d-block img-thumbnail" />
+						<img src={activeMovie.poster}
+							alt={"Post of the movie " + activeMovie.title}
+							className="mx-auto block img-thumbnail rounded border border-gray-200 p-1" />
 					</div>
-				</Col>
-				<Col>
-					<Row>
-						<h5 style={{ textAlign: "left" }}>{selectedMovie.title} ({selectedMovie.year})</h5>
-					</Row>
-					<Row style={{ height: "216px", overflowY: "scroll" }}>
-						<p style={{ textAlign: "left" }}>
-							{selectedMovie.description}
+				</div>
+				<div className="w-1/2 px-2">
+					<div className="mb-2">
+						<h5 className="text-left text-lg font-medium">{activeMovie.title} ({activeMovie.year})</h5>
+					</div>
+					<div className="h-[216px] overflow-y-auto">
+						<p className="text-left">
+							{activeMovie.description}
 						</p>
-					</Row>
-				</Col>
-			</Row>
-		</Container >
+					</div>
+				</div>
+			</div>
+		</div>
 	)
 }
 

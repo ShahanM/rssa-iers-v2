@@ -1,38 +1,30 @@
 import React from "react";
-import Image from "react-bootstrap/Image";
-import ListGroup from "react-bootstrap/ListGroup";
-import { useRecoilState } from "recoil";
-import { Movie } from "../../components/moviegrid/moviegriditem/MovieGridItem.types";
-import { activeEmotionMovieIdState, selectedEmotionMovieIdState } from "../../states/emotionmoviestate";
-import { Button } from "react-bootstrap";
+import { Movie } from "rssa-study-template";
 
 interface MovieListPanelItemProps {
 	movie: Movie;
 	selectButtonEnabled?: boolean;
+	activeMovieId: string | null;
+	setActiveMovieId: (id: string | null) => void;
+	selectedMovieId: string | null;
+	setSelectedMovieId: (id: string | null) => void;
 }
 
 const MovieListPanelItem: React.FC<MovieListPanelItemProps> = ({
-	movie, selectButtonEnabled = false
+	movie, selectButtonEnabled = false,
+	activeMovieId, setActiveMovieId, selectedMovieId, setSelectedMovieId
 }) => {
 
-	const [activeHoverMovieId, setActiveHoverMovieId] = useRecoilState(activeEmotionMovieIdState);
-	const [selectedMovieId, setSelectedMovieId] = useRecoilState(selectedEmotionMovieIdState);
-
 	return (
-		<ListGroup.Item as="div"
-			className={`d-flex justify-content-between align-items-center ${movie.id === activeHoverMovieId ? "bg-ers" : ""}`}
-			style={{ padding: "0.1rem" }}
-			// onMouseEnter={(evt) => props.hoverHandler(evt, true, movie, "enter")}
-			onMouseEnter={() => setActiveHoverMovieId(movie.id)}
+		<div
+			className={`flex justify-between items-center p-1 border-b border-gray-200 hover:bg-gray-50 transition-colors ${movie.id === activeMovieId ? "bg-amber-100" : ""}`}
+			onMouseEnter={() => setActiveMovieId(movie.id)}
 		>
 			<div>
-				<Image className="sidePanelThumbnail" src={movie.poster} />
+				<img className="w-[45px] h-[67px] object-cover rounded" src={movie.poster} alt={movie.title} />
 			</div>
-			<div style={{
-				position: "relative", boxSizing: "border-box", width: "87%",
-				display: "inline-block", verticalAlign: "middle"
-			}}>
-				<p style={{ marginBottom: "0", marginTop: "0.25rem", textAlign: "left", marginLeft: "0.5em" }}>
+			<div className="relative w-[87%] inline-block align-middle">
+				<p className="mb-0 mt-1 text-left ml-2 text-sm font-medium text-gray-700">
 					{movie.title + " (" + movie.year + ")"}
 				</p>
 			</div>
@@ -40,14 +32,14 @@ const MovieListPanelItem: React.FC<MovieListPanelItemProps> = ({
 				<>
 					<div id={"selectButton_" + movie.id}>
 						{movie.id === selectedMovieId ?
-							<Button variant="ersDone" className="movielist-btn"> Selected</Button>
+							<button className="px-3 py-1 text-xs font-medium rounded bg-green-500 text-white cursor-default"> Selected</button>
 							:
-							<Button variant="ers" className="movielist-btn" onClick={() => setSelectedMovieId(movie.id)}>Select</Button>
+							<button className="px-3 py-1 text-xs font-medium rounded bg-amber-500 text-white hover:bg-amber-600 transition-colors" onClick={() => setSelectedMovieId(movie.id)}>Select</button>
 						}
 					</div>
 				</>
 				: ''}
-		</ListGroup.Item>
+		</div>
 	)
 }
 

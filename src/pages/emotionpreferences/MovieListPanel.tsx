@@ -1,66 +1,66 @@
-import Col from "react-bootstrap/Col";
-import ListGroup from "react-bootstrap/ListGroup";
-import { useRecoilValue } from "recoil";
-import { emotionMovieMapState } from "../../states/emotionmoviestate";
-import { emotionState } from "../../states/emotiontogglestate";
 import { EmotionMovieDetails } from "../../types/movies";
+import { EmotionStatusValue } from "./EmotionPreferences";
 import MovieListPanelItem from "./MovieListPanelItem";
 
 interface MovieListPanelProps {
 	id: string;
 	panelTitle: string;
 	selectButtonEnabled?: boolean;
+	movies: Map<string, EmotionMovieDetails>;
+	emotionMap: Map<string, EmotionStatusValue>;
+	activeMovieId: string | null;
+	setActiveMovieId: (id: string | null) => void;
+	selectedMovieId: string | null;
+	setSelectedMovieId: (id: string | null) => void;
 }
 
 
 const MovieListPanel: React.FC<MovieListPanelProps> = ({
-	id, panelTitle, selectButtonEnabled = false
+	id, panelTitle, selectButtonEnabled = false,
+	movies, emotionMap,
+	activeMovieId, setActiveMovieId, selectedMovieId, setSelectedMovieId
 }) => {
-
-	const movies: Map<string, EmotionMovieDetails> = useRecoilValue(emotionMovieMapState);
-	const emotionMap: Map<string, string> = useRecoilValue(emotionState);
 
 	const selectionTags = Array.from(emotionMap.entries()).filter(([emoKey, emoVal]) => emoVal !== 'ignore');
 
 	console.log("Selection Tags:", selectionTags, emotionMap);
 
 	return (
-		<Col id={id} className="recommendationsListContainer">
-			<div className="align-items-center justify-content-center"
-				style={{
-					height: "99px", padding: "9px 18px",
-					textAlign: "center", borderRadius: "0.3rem 0.3rem 0 0",
-					backgroundColor: "#e9ecef"
-				}}>
-				<h5>{panelTitle}</h5>
+		<div id={id} className="recommendationsListContainer h-full flex flex-col">
+			<div className="flex flex-col items-center justify-center bg-gray-200 rounded-t-md p-4 h-[99px] text-center">
+				<h5 className="text-lg font-medium mb-2">{panelTitle}</h5>
 				{
 					selectionTags.length > 0 ?
-						<div className="badgeContainer">
+						<div className="badgeContainer flex flex-wrap justify-center gap-2">
 							{selectionTags.map(([emo, emoVal], i) => (
-								<div className="badge" key={'badge_' + i}>
-									<div className="name">
+								<div className="badge flex items-center bg-white rounded-full px-3 py-1 shadow-sm" key={'badge_' + i}>
+									<div className="name font-medium text-gray-700 mr-2">
 										<span>{emo}</span>
 									</div>
-									<div className={`status ${emoVal === 'low' ? "ersorange" : "green"}`}>
+									<div className={`status text-xs font-bold uppercase ${emoVal === 'low' ? "text-amber-500" : "text-green-600"}`}>
 										<span>{emoVal}</span>
 									</div>
 								</div>
 							))}
 						</div>
 						:
-						<p style={{ padding: "1.8em" }}>No emotion preference selected</p>
+						<p className="p-4 text-gray-500">No emotion preference selected</p>
 				}
 			</div>
-			<ListGroup as="ul" style={{ minHeight: "504px" }}>
+			<ul className="list-none p-0 m-0 overflow-y-auto flex-grow border border-gray-200 rounded-b-md bg-white" style={{ minHeight: "504px" }}>
 				{[...movies.values()].map((movie) => (
 					<MovieListPanelItem
 						key={movie.id}
 						movie={movie}
 						selectButtonEnabled={selectButtonEnabled}
+						activeMovieId={activeMovieId}
+						setActiveMovieId={setActiveMovieId}
+						selectedMovieId={selectedMovieId}
+						setSelectedMovieId={setSelectedMovieId}
 					/>
 				))}
-			</ListGroup>
-		</Col>
+			</ul>
+		</div>
 	)
 }
 

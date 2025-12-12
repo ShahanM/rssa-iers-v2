@@ -1,6 +1,4 @@
-import Col from 'react-bootstrap/Col';
-import ProgressBar from 'react-bootstrap/ProgressBar';
-import Row from 'react-bootstrap/Row';
+
 
 export default function EmotionBars({ emotions, movie }) {
 	const floatToHexStr = (float) => {
@@ -80,24 +78,26 @@ export default function EmotionBars({ emotions, movie }) {
 		<div className="emoStatbars">
 			{
 				emotions.map((emotion, i) =>
-					<Row
+					<div
 						key={emotion.emo + '_' + i + '_' + movie.id}
-						className="align-items-center mb-1"
-						style={{ height: "27px" }}
+						className="flex items-center mb-1 h-7"
 					>
-						<Col xs={3} sm={3} md={3} xl={3} className="text-end ps-2">
+						<div className="w-1/4 text-right pr-2">
 							<span style={{ whiteSpace: "nowrap" }}>{emotion.emo}</span>
-						</Col>
+						</div>
 
-						<Col xs={9} className="ps-2">
-							<ProgressBar className="w-100" style={{ padding: "0" }}>
-								<ProgressBar
-									style={{ background: linearGradient(emotion, movie.emotions) }}
-									now={getEmoScaled(emotion, movie.emotions) * 100}
+						<div className="w-3/4 pl-2">
+							<div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+								<div
+									className="h-full rounded-full transition-all duration-500"
+									style={{
+										width: `${getEmoScaled(emotion, movie.emotions) * 100}%`,
+										background: linearGradient(emotion, movie.emotions)
+									}}
 								/>
-							</ProgressBar>
-						</Col>
-					</Row>
+							</div>
+						</div>
+					</div>
 				)
 			}
 		</div>

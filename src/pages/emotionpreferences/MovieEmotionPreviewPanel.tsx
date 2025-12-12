@@ -1,49 +1,46 @@
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import { useRecoilValue } from "recoil";
-import { activeEmotionMovieSelector } from "../../states/emotionmoviestate";
 import EmotionStats from "./emotionStats";
 import MoviePreviewCard from "./MoviePreviewCard";
+import { EmotionMovieDetails } from "../../types/movies";
 
 interface MovieEmotionPreviewPanelProps {
 	emoVizEnabled?: boolean;
 	vizType?: "wheel" | "bars";
+	activeMovie: EmotionMovieDetails | null;
 }
 
 const MovieEmotionPreviewPanel: React.FC<MovieEmotionPreviewPanelProps> = ({
 	emoVizEnabled,
-	vizType
+	vizType,
+	activeMovie
 }) => {
 
-	const selectedMovie = useRecoilValue(activeEmotionMovieSelector);
-
-	if (!selectedMovie) {
+	if (!activeMovie) {
 		return (
-			<Container>
-				<Row style={{ height: "279px" }}>
-					<h5 style={{ textAlign: "center", marginTop: "100px" }}>Select a movie to see its emotional signature</h5>
-				</Row>
-			</Container>
+			<div className="container mx-auto">
+				<div className="h-[279px] flex items-center justify-center">
+					<h5 className="text-center text-lg font-medium">Select a movie to see its emotional signature</h5>
+				</div>
+			</div>
 		);
 	}
 
 	return (
-		<Container>
-			<Row className="mt-3" style={{ height: "279px" }}>
-				<MoviePreviewCard />
-			</Row>
-			<hr />
+		<div className="container mx-auto">
+			<div className="mt-3 h-[279px]">
+				<MoviePreviewCard activeMovie={activeMovie} />
+			</div>
+			<hr className="my-4 border-gray-300" />
 			{emoVizEnabled &&
 				<>
-					<Row className="mt-3 text-lg-center">
-						<h5>Emotional signature</h5>
-					</Row>
-					<Row className="mt-3 centered-content">
-						<EmotionStats movie={selectedMovie} vizType={vizType}/>
-					</Row>
+					<div className="mt-3 text-center">
+						<h5 className="text-lg font-medium">Emotional signature</h5>
+					</div>
+					<div className="mt-3 flex justify-center">
+						<EmotionStats movie={activeMovie} vizType={vizType} />
+					</div>
 				</>
 			}
-		</Container>
+		</div>
 	)
 }
 
