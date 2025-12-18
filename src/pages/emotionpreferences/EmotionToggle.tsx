@@ -3,6 +3,7 @@ import { useStudy } from 'rssa-api';
 import { useParticipant } from '../../contexts/ParticipantContext';
 import { emotionsDict } from '../../utils/constants';
 import { EmotionStatusValue } from './EmotionPreferences';
+import clsx from 'clsx';
 
 const initialEmotionMap = new Map<string, EmotionStatusValue>(Object.entries(emotionsDict));
 
@@ -19,7 +20,6 @@ type EmotionPreferenceRequest = {
 		item_id: string;
 		rating: number;
 	}>;
-	num_rec: number; // FIXME: This should be handled by the server as a part of the study condition
 }
 
 interface EmotionToggleProps {
@@ -108,10 +108,12 @@ const EmotionToggle: React.FC<EmotionToggleProps> = ({
 											type="button"
 											disabled={isLocked}
 											onClick={() => handleEmotionStateChange(emotionName, 'high')}
-											className={`px-4 py-1 text-sm font-medium border-t border-b border-gray-200 focus:z-10 focus:ring-2 focus:ring-amber-500 focus:text-amber-700 ${currentState === 'high'
-												? 'bg-amber-500 text-white hover:bg-amber-600'
-												: 'bg-white text-gray-900 hover:bg-gray-100 hover:text-amber-700'
-												} ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+											className={clsx(`px-4 py-1 text-sm font-medium border-t border-b border-gray-200 focus:z-10 focus:ring-2 focus:ring-amber-500 focus:text-amber-700, 
+												cursor-pointer,
+												${currentState === 'high'
+													? 'bg-amber-500 text-white hover:bg-amber-600'
+													: 'bg-white text-gray-900 hover:bg-gray-100 hover:text-amber-700'
+												} ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`)}
 										>
 											More
 										</button>

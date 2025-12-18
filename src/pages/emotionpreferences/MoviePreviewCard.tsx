@@ -24,7 +24,7 @@ const MoviePreviewCard: React.FC<MoviePreviewCardProps> = ({ activeMovie }) => {
 			<div className="flex">
 				<div className="w-1/2 px-2">
 					<div className="movie-preview-card-image">
-						<img src={activeMovie.poster}
+						<img src={activeMovie.tmdb_poster}
 							alt={"Post of the movie " + activeMovie.title}
 							className="mx-auto block img-thumbnail rounded border border-gray-200 p-1" />
 					</div>

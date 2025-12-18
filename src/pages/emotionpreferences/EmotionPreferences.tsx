@@ -14,13 +14,21 @@ import { useNextButtonControl, useStepCompletion } from "rssa-study-template";
 
 export type EmotionStatusValue = string;
 
+type EmotionsPayload = {
+	step_id: string;
+	context_tag: string;
+	emotion_input?: {
+		emotion: string;
+		weight: string;
+	}[];
+};
+
 const initialEmotionMap = new Map<string, EmotionStatusValue>(Object.entries(emotionsDict));
 
 const EmotionPreferencesContent: React.FC = () => {
 	const { studyStep, resetNextButton } = useOutletContext<StudyLayoutContextType>();
 	const { setIsStepComplete } = useStepCompletion();
 	const { studyApi } = useStudy();
-	const navigate = useNavigate();
 
 	// Local State
 	const [emotionMap, setEmotionMap] = useState<Map<string, EmotionStatusValue>>(initialEmotionMap);
@@ -34,26 +42,26 @@ const EmotionPreferencesContent: React.FC = () => {
 
 	// Constants
 	const condition = 5; // Hardcoded as per original
+	const context_tag = `ers-${condition}`;
 	const emoVizEnabled = studyConditions[condition].emoVizEnabled;
 	const emoTogglesEnabled = studyConditions[condition].emoTogglesEnabled;
 	const defaultEmoWeightLabel = studyConditions[condition].defaultEmoWeightLabel;
 
 	// Prepare Fetch Payload
 	const contextData = useMemo(() => {
+		const payload: EmotionsPayload = { step_id: studyStep?.id, context_tag: context_tag };
 		// Check if all are ignored (default state)
-		const isAllIgnored = Array.from(emotionMap.values()).every(val => val === 'ignore');
+		const isAllIgnored = Array.from(emotionMap.values()).every((val) => val === "ignore");
 		if (isAllIgnored) {
-			return {};
+			return payload;
 		}
 
 		const emotionInput = Array.from(emotionMap.entries()).map(([emotion, weight]) => ({
 			emotion: emotion.toLowerCase(),
-			weight
+			weight,
 		}));
-		return {
-			emotion_input: emotionInput,
-			step_id: studyStep?.id
-		};
+		payload.emotion_input = emotionInput;
+		return payload;
 	}, [emotionMap, studyStep]);
 
 	// Fetch Recommendations
@@ -65,18 +73,19 @@ const EmotionPreferencesContent: React.FC = () => {
 		console.log("Query Enabled:", !!studyStep);
 	}, [studyStep, contextData]);
 
-	const { data: moviesList = [], isLoading, isFetching, error } = useQuery<EmotionMovieDetails[]>({
-		queryKey: ['recommendations', contextData],
+	const {
+		data: moviesList = [],
+		isLoading,
+		isFetching,
+		error,
+	} = useQuery<EmotionMovieDetails[]>({
+		queryKey: ["recommendations", contextData],
 		queryFn: async () => {
 			try {
-				console.log(">>> STARTING QUERY FN <<<");
-				console.log("Fetching recommendations with:", contextData);
-				const response = await studyApi.post<any, EmotionMovieDetails[]>('recommendations/', contextData);
-				console.log(">>> QUERY SUCCESS <<<");
-				console.log("Learned Recommendations response:", response);
+				const response = await studyApi.post<any, EmotionMovieDetails[]>("recommendations/", contextData);
 				return response;
 			} catch (err) {
-				console.error(">>> QUERY FAILED <<<", err);
+				console.error("Query failed:", err);
 				throw err;
 			}
 		},
@@ -92,7 +101,6 @@ const EmotionPreferencesContent: React.FC = () => {
 	}, [error]);
 
 	// Navigation Logic
-
 
 	const handleFinalize = useCallback(() => {
 		setShowWarning(true);
@@ -122,7 +130,7 @@ const EmotionPreferencesContent: React.FC = () => {
 	// Derived State
 	const movies = useMemo(() => {
 		const map = new Map<string, EmotionMovieDetails>();
-		moviesList.forEach(m => map.set(m.id, m));
+		moviesList.forEach((m) => map.set(m.id, m));
 		return map;
 	}, [moviesList]);
 
@@ -144,41 +152,39 @@ const EmotionPreferencesContent: React.FC = () => {
 		setShowWarning(false);
 	};
 
-
-
 	return (
 		<div className="container mx-auto px-4">
 			<div className="mb-6">
-				{/* Header handled by StudyLayout */}
-			</div>
-			<div className="mb-6">
 				<div className="flex items-center">
-					<label className="w-1/4 font-medium text-gray-700">
-						Select Viz Type
-					</label>
-					<select className="w-1/4 mt-1 block rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-amber-500 focus:outline-none focus:ring-amber-500 sm:text-sm"
+					<label className="w-1/4 font-medium text-gray-700">Select Viz Type</label>
+					<select
+						className="w-1/4 mt-1 block rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-amber-500 focus:outline-none focus:ring-amber-500 sm:text-sm"
 						value={emoVizType}
 						onChange={(e) => {
 							setEmoVizType(e.target.value as "wheel" | "bars");
-						}}>
+						}}
+					>
 						<option value="bars">Emotion bars</option>
 						<option value="wheel">Plutchik Wheel of Emotions</option>
 					</select>
 				</div>
 			</div>
 
-			<WarningDialog show={showWarning} title={"Are you sure?"}
+			<WarningDialog
+				show={showWarning}
+				title={"Are you sure?"}
 				message={`<p>Finalizing will freeze your current emotion settings.</p> 
 								<p>This action cannot be undone.</p>`}
 				confirmCallback={confirmWarning}
 				confirmText={"Confirm"}
-				cancelCallback={cancelWarning} />
+				cancelCallback={cancelWarning}
+			/>
 
 			<div className="flex flex-wrap -mx-4" style={{ height: "fit-content" }}>
 				{/* Left Panel: Toggles */}
 				<div id="emotionPanel" className="w-full lg:w-4/12 px-4">
 					<div className="emoPrefControlPanel">
-						{emoTogglesEnabled &&
+						{emoTogglesEnabled && (
 							<div>
 								<EmotionToggle
 									isFinal={isToggleDone}
@@ -187,23 +193,44 @@ const EmotionPreferencesContent: React.FC = () => {
 									setEmotionMap={setEmotionMap}
 								/>
 							</div>
-						}
+						)}
 					</div>
 				</div>
 
 				{/* Middle Panel: Recommendations */}
 				<div id="moviePanel" className="w-full lg:w-4/12 px-4 relative">
-					{loading ?
-						<div className="absolute inset-0 bg-gray-800 bg-opacity-80 z-50 rounded-md flex items-center justify-center" style={{ marginTop: "99px", height: "504px" }}>
-							<svg className="animate-spin h-10 w-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-								<circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-								<path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+					{loading ? (
+						<div
+							className="absolute inset-0 bg-gray-800 bg-opacity-80 z-50 rounded-md flex items-center justify-center"
+							style={{ marginTop: "99px", height: "504px" }}
+						>
+							<svg
+								className="animate-spin h-10 w-10 text-white"
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+							>
+								<circle
+									className="opacity-25"
+									cx="12"
+									cy="12"
+									r="10"
+									stroke="currentColor"
+									strokeWidth="4"
+								></circle>
+								<path
+									className="opacity-75"
+									fill="currentColor"
+									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+								></path>
 							</svg>
 						</div>
-						: ""}
+					) : (
+						""
+					)}
 					<MovieListPanel
 						id="leftPanel"
-						panelTitle={'Recommendations'}
+						panelTitle={"Recommendations"}
 						selectButtonEnabled={selectButtonEnabled}
 						movies={movies}
 						emotionMap={emotionMap}
@@ -229,5 +256,4 @@ const EmotionPreferencesContent: React.FC = () => {
 	);
 };
 
-// Simplified Export (No Provider)
 export default EmotionPreferencesContent;
