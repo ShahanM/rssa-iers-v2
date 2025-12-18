@@ -1,26 +1,27 @@
+import React from 'react';
+import { EmotionMovieDetails, MovieEmotions } from "../../types/movies";
+import { EmotionConfig } from "./EmotionWheels"; // Import exported interface from EmotionWheels
 
+interface EmotionBarsProps {
+	emotions: EmotionConfig[];
+	movie: EmotionMovieDetails;
+}
 
-export default function EmotionBars({ emotions, movie }) {
-	const floatToHexStr = (float) => {
-		let hex = Math.round(float * 255).toString(16);
-		if (hex.length === 1) {
-			hex = '0' + hex;
-		}
-		return hex;
-	}
+export default function EmotionBars({ emotions, movie }: EmotionBarsProps) {
 
-	const getEmoScaled = (emo, movieEmotions) => {
-		const emoVal = movieEmotions[emo.emo.toLowerCase()];
+	const getEmoScaled = (emo: EmotionConfig, movieEmotions: MovieEmotions): number => {
+		const emotionKey = emo.emo.toLowerCase() as keyof MovieEmotions;
+		const emoVal = movieEmotions[emotionKey] as number;
 		return (emoVal - emo.min) / (emo.max - emo.min);
 	}
 
-	const hslToRgb = (h, s, l) => {
+	const hslToRgb = (h: number, s: number, l: number): number[] => {
 		let r, g, b;
 
 		if (s === 0) {
 			r = g = b = l; // achromatic
 		} else {
-			const hue2rgb = function hue2rgb(p, q, t) {
+			const hue2rgb = function hue2rgb(p: number, q: number, t: number) {
 				if (t < 0) t += 1;
 				if (t > 1) t -= 1;
 				if (t < 1 / 6) return p + (q - p) * 6 * t;
@@ -40,7 +41,7 @@ export default function EmotionBars({ emotions, movie }) {
 	}
 
 
-	const numberToColorHsl = (emoVal, emoMin, emoMax) => {
+	const numberToColorHsl = (emoVal: number, emoMin: number, emoMax: number): string => {
 		let ratio = emoVal;
 		if (emoMin > 0 || emoMax < 1) {
 			if (emoVal < emoMin) {
@@ -59,20 +60,14 @@ export default function EmotionBars({ emotions, movie }) {
 		return 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
 	}
 
-	const linearGradient = (emo, movieEmotions) => {
-		const emoVal = movieEmotions[emo.emo.toLowerCase()];
+	const linearGradient = (emo: EmotionConfig, movieEmotions: MovieEmotions): string => {
+		const emotionKey = emo.emo.toLowerCase() as keyof MovieEmotions;
+		const emoVal = movieEmotions[emotionKey] as number;
 		const gradStart = numberToColorHsl(emo.min, emo.min, emo.max);
 		const gradEnd = numberToColorHsl(emoVal, emo.min, emo.max);
 
 		return 'linear-gradient(90deg, ' + gradStart + ', ' + gradEnd + ')';
 	}
-
-	const getEmoBar = (emo, movieEmotions) => {
-		const emoVal = movieEmotions[emo.emo.toLowerCase()];
-
-		return numberToColorHsl(emoVal, emo.min, emo.max);
-	}
-
 
 	return (
 		<div className="emoStatbars">

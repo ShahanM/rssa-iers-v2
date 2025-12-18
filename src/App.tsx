@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter as Router } from "react-router-dom";
-import { RouteWrapper, SurveyPage, MovieRatingPage, DemographicsPage } from "rssa-study-template";
+import { RouteWrapper, SurveyPage, MovieRatingPage, DemographicsPage, FinalPage, FeedbackPage } from "rssa-study-template";
 import { WarningDialog } from "./components/dialogs/warningDialog";
-import FeedbackPage from "./pages/FeedbackPage";
-import FinalPage from "./pages/FinalPage";
-// // import MovieRatingPage from "./pages/MovieRatingPage";
 import WelcomePage from "./pages/WelcomePage";
 import EmotionPreferences from "./pages/emotionpreferences/EmotionPreferences";
 import "./index.css";

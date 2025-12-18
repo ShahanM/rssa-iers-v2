@@ -23,8 +23,6 @@ const MovieListPanel: React.FC<MovieListPanelProps> = ({
 
 	const selectionTags = Array.from(emotionMap.entries()).filter(([emoKey, emoVal]) => emoVal !== 'ignore');
 
-	console.log("Selection Tags:", selectionTags, emotionMap);
-
 	return (
 		<div id={id} className="recommendationsListContainer h-full flex flex-col">
 			<div className="flex flex-col items-center justify-center bg-gray-200 rounded-t-md p-4 h-[99px] text-center">

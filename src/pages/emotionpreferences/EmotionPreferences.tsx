@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useStudy } from "rssa-api";
 import { StudyLayoutContextType } from "rssa-study-template";
-import { useOutletContext, useNavigate } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 import { WarningDialog } from "../../components/dialogs/warningDialog";
 
 import { EmotionMovieDetails } from "../../types/movies";
@@ -30,27 +30,23 @@ const EmotionPreferencesContent: React.FC = () => {
 	const { setIsStepComplete } = useStepCompletion();
 	const { studyApi } = useStudy();
 
-	// Local State
 	const [emotionMap, setEmotionMap] = useState<Map<string, EmotionStatusValue>>(initialEmotionMap);
 	const [activeMovieId, setActiveMovieId] = useState<string | null>(null);
 	const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null);
 
-	const [emoVizType, setEmoVizType] = useState<"wheel" | "bars">("wheel");
+	const [emoVizType, setEmoVizType] = useState<"wheel" | "bars" | "wheel-straight" | "wheel-inverse" | "wheel-rounded">("wheel");
 	const [isToggleDone, setIsToggleDone] = useState(false);
 	const [showWarning, setShowWarning] = useState(false);
-	const [selectButtonEnabled, setSelectButtonEnabled] = useState(false); // Can be derived from isToggleDone?
+	const [selectButtonEnabled, setSelectButtonEnabled] = useState(false);
 
-	// Constants
-	const condition = 5; // Hardcoded as per original
+	const condition = 5;
 	const context_tag = `ers-${condition}`;
 	const emoVizEnabled = studyConditions[condition].emoVizEnabled;
 	const emoTogglesEnabled = studyConditions[condition].emoTogglesEnabled;
 	const defaultEmoWeightLabel = studyConditions[condition].defaultEmoWeightLabel;
 
-	// Prepare Fetch Payload
 	const contextData = useMemo(() => {
 		const payload: EmotionsPayload = { step_id: studyStep?.id, context_tag: context_tag };
-		// Check if all are ignored (default state)
 		const isAllIgnored = Array.from(emotionMap.values()).every((val) => val === "ignore");
 		if (isAllIgnored) {
 			return payload;
@@ -64,13 +60,7 @@ const EmotionPreferencesContent: React.FC = () => {
 		return payload;
 	}, [emotionMap, studyStep]);
 
-	// Fetch Recommendations
-	// Debug Logging
 	useEffect(() => {
-		console.log("EmotionPreferences Debug:");
-		console.log("studyStep:", studyStep);
-		console.log("contextData:", contextData);
-		console.log("Query Enabled:", !!studyStep);
 	}, [studyStep, contextData]);
 
 	const {
@@ -90,8 +80,8 @@ const EmotionPreferencesContent: React.FC = () => {
 			}
 		},
 		enabled: !!studyStep,
-		staleTime: 0, // Force fetch every time
-		refetchOnWindowFocus: false, // Optional: reduce noise
+		staleTime: 0,
+		refetchOnWindowFocus: false,
 	});
 
 	const loading = isLoading || isFetching;
@@ -100,16 +90,12 @@ const EmotionPreferencesContent: React.FC = () => {
 		if (error) console.error("Query Error State:", error);
 	}, [error]);
 
-	// Navigation Logic
-
 	const handleFinalize = useCallback(() => {
 		setShowWarning(true);
 	}, []);
 
-	// Button Control
 	const { setButtonControl } = useNextButtonControl();
 
-	// Effect to control the Next Button
 	useEffect(() => {
 		if (loading) return;
 
@@ -127,7 +113,6 @@ const EmotionPreferencesContent: React.FC = () => {
 		};
 	}, [loading, isToggleDone, setButtonControl, handleFinalize, resetNextButton]);
 
-	// Derived State
 	const movies = useMemo(() => {
 		const map = new Map<string, EmotionMovieDetails>();
 		moviesList.forEach((m) => map.set(m.id, m));
@@ -161,11 +146,14 @@ const EmotionPreferencesContent: React.FC = () => {
 						className="w-1/4 mt-1 block rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-amber-500 focus:outline-none focus:ring-amber-500 sm:text-sm"
 						value={emoVizType}
 						onChange={(e) => {
-							setEmoVizType(e.target.value as "wheel" | "bars");
+							setEmoVizType(e.target.value as "wheel" | "bars" | "wheel-straight" | "wheel-inverse" | "wheel-rounded");
 						}}
 					>
-						<option value="bars">Emotion bars</option>
 						<option value="wheel">Plutchik Wheel of Emotions</option>
+						<option value="wheel-straight">Plutchik Wheel - Straight</option>
+						<option value="wheel-inverse">Plutchik Wheel - Inverse</option>
+						<option value="wheel-rounded">Plutchik Wheel - Rounded</option>
+						<option value="bars">Emotion bars</option>
 					</select>
 				</div>
 			</div>

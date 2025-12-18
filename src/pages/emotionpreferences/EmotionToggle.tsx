@@ -37,11 +37,8 @@ const EmotionToggle: React.FC<EmotionToggleProps> = ({
 	setEmotionMap
 }) => {
 
-	const { studyApi } = useStudy();
-	const { participant } = useParticipant();
-
 	const [isLocked, setIsLocked] = useState(isFinal || false);
-	const previousEmotionMapPref = useRef<Map<string, EmotionStatusValue> | undefined>(undefined);
+	// const previousEmotionMapPref = useRef<Map<string, EmotionStatusValue> | undefined>(undefined);
 
 	const emotionNames: string[] = ['Joy', 'Trust', 'Fear', 'Surprise', 'Sadness', 'Disgust', 'Anger', 'Anticipation'];
 
@@ -52,9 +49,6 @@ const EmotionToggle: React.FC<EmotionToggleProps> = ({
 			return newMap;
 		});
 	}
-
-	// Removed redundant manual fetching logic. 
-	// Recommendations are now handled by EmotionPreferences.tsx via useQuery.
 
 	const handleReset = () => {
 		setEmotionMap(initialEmotionMap);
