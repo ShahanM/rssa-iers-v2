@@ -28,17 +28,21 @@ interface EmotionToggleProps {
 	infoCallback?: () => void;
 	emotionMap: Map<string, EmotionStatusValue>;
 	setEmotionMap: (update: Map<string, EmotionStatusValue> | ((prev: Map<string, EmotionStatusValue>) => Map<string, EmotionStatusValue>)) => void;
+	loading?: boolean;
 }
 
 const EmotionToggle: React.FC<EmotionToggleProps> = ({
 	isFinal,
 	defaultLabel = "Ignore",
 	emotionMap,
-	setEmotionMap
+	setEmotionMap,
+	loading = false
 }) => {
 
 	const [isLocked, setIsLocked] = useState(isFinal || false);
 	// const previousEmotionMapPref = useRef<Map<string, EmotionStatusValue> | undefined>(undefined);
+
+	const isDisabled = isLocked || loading;
 
 	const emotionNames: string[] = ['Joy', 'Trust', 'Fear', 'Surprise', 'Sadness', 'Disgust', 'Anger', 'Anticipation'];
 
@@ -89,36 +93,36 @@ const EmotionToggle: React.FC<EmotionToggleProps> = ({
 									<div className="inline-flex rounded-md shadow-sm" role="group">
 										<button
 											type="button"
-											disabled={isLocked}
+											disabled={isDisabled}
 											onClick={() => handleEmotionStateChange(emotionName, 'low')}
 											className={`px-4 py-1 text-sm font-medium border border-gray-200 rounded-l-lg focus:z-10 focus:ring-2 focus:ring-amber-500 focus:text-amber-700 ${currentState === 'low'
 												? 'bg-amber-500 text-white hover:bg-amber-600'
 												: 'bg-white text-gray-900 hover:bg-gray-100 hover:text-amber-700'
-												} ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+												} ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
 										>
 											Less
 										</button>
 										<button
 											type="button"
-											disabled={isLocked}
+											disabled={isDisabled}
 											onClick={() => handleEmotionStateChange(emotionName, 'high')}
 											className={clsx(`px-4 py-1 text-sm font-medium border-t border-b border-gray-200 focus:z-10 focus:ring-2 focus:ring-amber-500 focus:text-amber-700, 
 												cursor-pointer,
 												${currentState === 'high'
 													? 'bg-amber-500 text-white hover:bg-amber-600'
 													: 'bg-white text-gray-900 hover:bg-gray-100 hover:text-amber-700'
-												} ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`)}
+												} ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`)}
 										>
 											More
 										</button>
 										<button
 											type="button"
-											disabled={isLocked}
+											disabled={isDisabled}
 											onClick={() => handleEmotionStateChange(emotionName, 'ignore')}
 											className={`px-4 py-1 text-sm font-medium border border-gray-200 rounded-r-lg focus:z-10 focus:ring-2 focus:ring-amber-500 focus:text-amber-700 ${currentState === 'ignore'
 												? 'bg-amber-500 text-white hover:bg-amber-600'
 												: 'bg-white text-gray-900 hover:bg-gray-100 hover:text-amber-700'
-												} ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+												} ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
 										>
 											{defaultLabel}
 										</button>
@@ -132,9 +136,9 @@ const EmotionToggle: React.FC<EmotionToggleProps> = ({
 			</div>
 			<div className="mt-8 flex justify-center">
 				<button
-					className={`emoToggleResetBtn w-[300px] px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+					className={`emoToggleResetBtn w-[300px] px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
 					onClick={() => handleReset()}
-					disabled={isLocked}
+					disabled={isDisabled}
 				>
 					Reset
 				</button>

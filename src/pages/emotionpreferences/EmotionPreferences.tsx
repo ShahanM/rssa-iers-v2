@@ -246,6 +246,7 @@ const EmotionPreferencesContent: React.FC = () => {
 									defaultLabel={defaultEmoWeightLabel}
 									emotionMap={emotionMap}
 									setEmotionMap={setEmotionMap}
+									loading={loading}
 								/>
 							</div>
 						)}
