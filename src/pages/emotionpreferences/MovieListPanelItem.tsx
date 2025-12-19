@@ -30,7 +30,7 @@ const MovieListPanelItem: React.FC<MovieListPanelItemProps> = ({
 			</div>
 			{selectButtonEnabled ?
 				<>
-					<div id={"selectButton_" + movie.id}>
+					<div id={"selectButton_" + movie.id} className="tour-select-button">
 						{movie.id === selectedMovieId ?
 							<button className="px-3 py-1 text-xs font-medium rounded bg-green-500 text-white cursor-default"> Selected</button>
 							:

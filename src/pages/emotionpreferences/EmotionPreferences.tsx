@@ -5,6 +5,9 @@ import { StudyLayoutContextType } from "rssa-study-template";
 import { useOutletContext } from "react-router-dom";
 import { WarningDialog } from "../../components/dialogs/warningDialog";
 
+import { driver } from "driver.js";
+import "driver.js/dist/driver.css";
+
 import { EmotionMovieDetails } from "../../types/movies";
 import { studyConditions, emotionsDict } from "../../utils/constants";
 import EmotionToggle from "./EmotionToggle";
@@ -49,13 +52,22 @@ const EmotionPreferencesContent: React.FC = () => {
 		const payload: EmotionsPayload = { step_id: studyStep?.id, context_tag: context_tag };
 		const isAllIgnored = Array.from(emotionMap.values()).every((val) => val === "ignore");
 		if (isAllIgnored) {
+			payload.context_tag = `${context_tag}-all-ignore`;
 			return payload;
 		}
 
-		const emotionInput = Array.from(emotionMap.entries()).map(([emotion, weight]) => ({
-			emotion: emotion.toLowerCase(),
-			weight,
-		}));
+		let contextString = "";
+		const emotionInput = Array.from(emotionMap.entries()).map(([emotion, weight]) => {
+			if (weight !== "ignore") {
+				contextString += `${emotion}-${weight},`;
+			}
+			return {
+				emotion: emotion.toLowerCase(),
+				weight,
+			};
+		});
+		contextString = contextString.slice(0, -1);
+		payload.context_tag = `${context_tag}-${contextString}`;
 		payload.emotion_input = emotionInput;
 		return payload;
 	}, [emotionMap, studyStep]);
@@ -107,11 +119,66 @@ const EmotionPreferencesContent: React.FC = () => {
 			});
 		} else {
 			resetNextButton();
+
+			// Selection Phase Tour
+			const driverObj = driver({
+				showProgress: true,
+				steps: [
+					{
+						element: '.tour-select-button',
+						popover: {
+							title: 'Select a Movie',
+							description: 'Now that you have finalized your preferences, please select one movie from the list that best matches your mood.',
+							side: "left",
+							align: 'start'
+						}
+					}
+				]
+			});
+			driverObj.drive();
 		}
 		return () => {
 			resetNextButton();
 		};
 	}, [loading, isToggleDone, setButtonControl, handleFinalize, resetNextButton]);
+
+	// Intro Tour
+	useEffect(() => {
+		const driverObj = driver({
+			showProgress: true,
+			steps: [
+				{
+					element: '#emotionPanel',
+					popover: {
+						title: 'Adjust Your Preferences',
+						description: 'Use these toggles to tell us how you are feeling right now. You can ignore emotions that do not apply.',
+						side: "right",
+						align: 'start'
+					}
+				},
+				{
+					element: '#moviePanel',
+					popover: {
+						title: 'Explore Recommendations',
+						description: 'As you adjust your feelings, this list will update with movie recommendations tailored to your mood.',
+						side: "left",
+						align: 'start'
+					}
+				},
+				{
+					element: '#moviePosterPreview',
+					popover: {
+						title: 'Preview',
+						description: 'Hover over a movie in the list to see its details and how it matches your emotion profile here.',
+						side: "left",
+						align: 'start'
+					}
+				}
+			]
+		});
+
+		driverObj.drive();
+	}, []);
 
 	const movies = useMemo(() => {
 		const map = new Map<string, EmotionMovieDetails>();
