@@ -5,6 +5,7 @@ import MovieListPanelItem from "./MovieListPanelItem";
 interface MovieListPanelProps {
 	id: string;
 	panelTitle: string;
+	loading?: boolean;
 	selectButtonEnabled?: boolean;
 	movies: Map<string, EmotionMovieDetails>;
 	emotionMap: Map<string, EmotionStatusValue>;
@@ -16,7 +17,7 @@ interface MovieListPanelProps {
 
 
 const MovieListPanel: React.FC<MovieListPanelProps> = ({
-	id, panelTitle, selectButtonEnabled = false,
+	id, panelTitle, loading = false, selectButtonEnabled = false,
 	movies, emotionMap,
 	activeMovieId, setActiveMovieId, selectedMovieId, setSelectedMovieId
 }) => {
@@ -45,19 +46,45 @@ const MovieListPanel: React.FC<MovieListPanelProps> = ({
 						<p className="p-4 text-gray-500">No emotion preference selected</p>
 				}
 			</div>
-			<ul className="list-none p-0 m-0 overflow-y-auto flex-grow border border-gray-200 rounded-b-md bg-white" style={{ minHeight: "504px" }}>
-				{[...movies.values()].map((movie) => (
-					<MovieListPanelItem
-						key={movie.id}
-						movie={movie}
-						selectButtonEnabled={selectButtonEnabled}
-						activeMovieId={activeMovieId}
-						setActiveMovieId={setActiveMovieId}
-						selectedMovieId={selectedMovieId}
-						setSelectedMovieId={setSelectedMovieId}
-					/>
-				))}
-			</ul>
+			<div className="relative flex-grow" style={{ minHeight: "504px" }}>
+				{loading && (
+					<div className="absolute inset-0 bg-gray-800 bg-opacity-80 z-50 rounded-b-md flex items-center justify-center">
+						<svg
+							className="animate-spin h-10 w-10 text-white"
+							xmlns="http://www.w3.org/2000/svg"
+							fill="none"
+							viewBox="0 0 24 24"
+						>
+							<circle
+								className="opacity-25"
+								cx="12"
+								cy="12"
+								r="10"
+								stroke="currentColor"
+								strokeWidth="4"
+							></circle>
+							<path
+								className="opacity-75"
+								fill="currentColor"
+								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+							></path>
+						</svg>
+					</div>
+				)}
+				<ul className="list-none p-0 m-0 overflow-y-auto h-full border border-gray-200 rounded-b-md bg-white">
+					{[...movies.values()].map((movie) => (
+						<MovieListPanelItem
+							key={movie.id}
+							movie={movie}
+							selectButtonEnabled={selectButtonEnabled}
+							activeMovieId={activeMovieId}
+							setActiveMovieId={setActiveMovieId}
+							selectedMovieId={selectedMovieId}
+							setSelectedMovieId={setSelectedMovieId}
+						/>
+					))}
+				</ul>
+			</div>
 		</div>
 	)
 }
