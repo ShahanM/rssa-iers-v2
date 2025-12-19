@@ -30,10 +30,10 @@ const MovieListPanel: React.FC<MovieListPanelProps> = ({
 				<h5 className="text-lg font-medium mb-2">{panelTitle}</h5>
 				{
 					selectionTags.length > 0 ?
-						<div className="badgeContainer flex flex-wrap justify-center gap-2">
+						<div className="badgeContainer flex flex-wrap justify-center gap-1">
 							{selectionTags.map(([emo, emoVal], i) => (
-								<div className="badge flex items-center bg-white rounded-full px-3 py-1 shadow-sm" key={'badge_' + i}>
-									<div className="name font-medium text-gray-700 mr-2">
+								<div className="badge flex items-center bg-white rounded-full px-2 py-1 shadow-sm" key={'badge_' + i}>
+									<div className="name text-xs font-medium text-gray-700 mr-2">
 										<span>{emo}</span>
 									</div>
 									<div className={`status text-xs font-bold uppercase ${emoVal === 'low' ? "text-amber-500" : "text-green-600"}`}>
