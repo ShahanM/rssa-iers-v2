@@ -1,198 +1,169 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import Button from 'react-bootstrap/Button';
-import Col from 'react-bootstrap/Col';
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import ToggleButton from 'react-bootstrap/ToggleButton';
-import ToggleButtonGroup from 'react-bootstrap/ToggleButtonGroup';
-import { useRecoilState, useRecoilValue } from 'recoil';
-import { Participant, useStudy } from 'rssa-api';
-import { MovieRating } from '../../components/moviegrid/moviegriditem/MovieGridItem.types';
-import { emotionMovieMapState } from '../../states/emotionmoviestate';
-import { emotionState, EmotionStatusValue, initialEmotionMap } from '../../states/emotiontogglestate';
-import { ratedMoviesState } from '../../states/ratedmoviestate';
-import { participantState } from '../../states/studyState';
-import { EmotionMovieDetails } from '../../types/movies';
+import { useState } from "react";
+import { emotionsDict } from "../../utils/constants";
+import { EmotionStatusValue } from "./EmotionPreferences";
+import clsx from "clsx";
 
+const initialEmotionMap = new Map<string, EmotionStatusValue>(
+  Object.entries(emotionsDict),
+);
 
 type EmotionPreferenceRequest = {
-	user_id: string;
-	user_condition: string;
-	input_type: 'discrete' | 'continuous';
-	emotion_input: Array<{
-		emotion: string;
-		weight: EmotionStatusValue;
-	}>;
-	ratings: Array<{
-		item_id: number;
-		rating: number;
-	}>;
-	num_rec: number; // FIXME: This should be handled by the server as a part of the study condition
-}
-
-function areMapsDeeplyEqual(map1: Map<string, EmotionStatusValue>, map2: Map<string, EmotionStatusValue>): boolean {
-	if (map1.size !== map2.size) {
-		return false;
-	}
-	for (const [key, val] of map1) {
-		if (map2.get(key) !== val) {
-			return false;
-		}
-	}
-	return true;
-}
+  user_id: string;
+  user_condition: string;
+  input_type: "discrete" | "continuous";
+  emotion_input: Array<{
+    emotion: string;
+    weight: EmotionStatusValue;
+  }>;
+  ratings: Array<{
+    item_id: string;
+    rating: number;
+  }>;
+};
 
 interface EmotionToggleProps {
-	isFinal?: boolean;
-	defaultLabel?: string;
-	infoCallback?: () => void;
+  isFinal?: boolean;
+  defaultLabel?: string;
+  infoCallback?: () => void;
+  emotionMap: Map<string, EmotionStatusValue>;
+  setEmotionMap: (
+    update:
+      | Map<string, EmotionStatusValue>
+      | ((
+          prev: Map<string, EmotionStatusValue>,
+        ) => Map<string, EmotionStatusValue>),
+  ) => void;
+  loading?: boolean;
 }
 
 const EmotionToggle: React.FC<EmotionToggleProps> = ({
-	isFinal,
-	defaultLabel = "Ignore",
+  isFinal,
+  defaultLabel = "Ignore",
+  emotionMap,
+  setEmotionMap,
+  loading = false,
 }) => {
+  // const previousEmotionMapPref = useRef<Map<string, EmotionStatusValue> | undefined>(undefined);
 
-	const { studyApi } = useStudy();
+  const isDisabled = isFinal || loading;
 
-	const [isLocked, setIsLocked] = useState(isFinal || false);
-	const previousEmotionMapPref = useRef<Map<string, EmotionStatusValue> | undefined>(undefined);
+  const emotionNames: string[] = [
+    "Joy",
+    "Trust",
+    "Fear",
+    "Surprise",
+    "Sadness",
+    "Disgust",
+    "Anger",
+    "Anticipation",
+  ];
 
+  const handleEmotionStateChange = (
+    emotionKey: string,
+    newState: EmotionStatusValue,
+  ) => {
+    setEmotionMap((prevMap) => {
+      const newMap = new Map(prevMap);
+      newMap.set(emotionKey, newState);
+      return newMap;
+    });
+  };
 
-	const participant: Participant | null = useRecoilValue(participantState);
-	const ratedMovies: Map<string, MovieRating> = useRecoilValue(ratedMoviesState);
-	const [movies, setMovies] = useRecoilState(emotionMovieMapState);
+  const handleReset = () => {
+    setEmotionMap(initialEmotionMap);
+  };
 
-	const [emotionMap, setEmotionMap] = useRecoilState(emotionState);
-	const emotionNames: string[] = ['Joy', 'Trust', 'Fear', 'Surprise', 'Sadness', 'Disgust', 'Anger', 'Anticipation'];
-
-	const handleEmotionStateChange = (emotionKey: string, newState: EmotionStatusValue) => {
-		setEmotionMap(prevMap => {
-			const newMap = new Map(prevMap);
-			newMap.set(emotionKey, newState);
-			return newMap;
-		});
-	}
-
-	const updateRecommendations = useCallback(async () => {
-		if (!emotionMap || !participant) {
-			console.error("Missing emotionMap or participant");
-			return;
-		}
-
-		try {
-			const response = await studyApi.post<EmotionPreferenceRequest, EmotionMovieDetails[]>(
-				'recommendations/ers/update', {
-				user_id: participant.id,
-				user_condition: participant.condition_id,
-				input_type: 'discrete',
-				emotion_input: Array.from(emotionMap.entries()).map(([emotion, weight]) => ({
-					emotion,
-					weight
-				})),
-				ratings: Array.from(ratedMovies.values()).map((rating) => ({
-					item_id: rating.movielens_id,
-					rating: rating.rating
-				})),
-				num_rec: 10 // FIXME: This should be handled by the server as a part of the study condition
-			});
-
-			if (response && response.length > 0) {
-				setMovies(new Map(response.map(item => [item.id, item])));
-			}
-		} catch (error) {
-			console.error("Error updating recommendations:", error);
-		}
-
-		console.log("Updating recommendations with emotion map:", emotionMap);
-	}, [emotionMap, participant, ratedMovies, studyApi, setMovies]);
-
-	useEffect(() => {
-		if (previousEmotionMapPref.current === undefined) {
-			previousEmotionMapPref.current = emotionMap;
-			console.log("Initial emotion map, skipping API call.", emotionMap);
-			return;
-		}
-
-		if (!areMapsDeeplyEqual(emotionMap, previousEmotionMapPref.current)) {
-			console.log("Emotion map changed, updating recommendations.", emotionMap);
-			updateRecommendations();
-		} else {
-			console.log("Emotion map did not change, skipping API call.", emotionMap);
-		}
-
-		previousEmotionMapPref.current = emotionMap;
-	}, [updateRecommendations, emotionMap]);
-
-	const handleReset = () => {
-		setEmotionMap(initialEmotionMap);
-	}
-
-	return (
-		<Container>
-			<Row>
-				<div style={{ marginBottom: "3px", display: "inline-flex", marginTop: "27px" }}>
-					<h5>Adjust your emotion preferences</h5>
-					<i className="fas fa-info-circle"
-						style={{ marginTop: "-13px", marginLeft: "9px" }}
-					/>
-				</div>
-			</Row>
-			<Row>
-				<p style={{ textAlign: "left" }}>
-					Indicate whether you want the recommended movies to evoke
-					less or more of a certain emotion, or to
-					{defaultLabel === "Ignore" ?
-						<span style={{ marginLeft: "0.5ex" }}>
-							ignore the emotion in weighing the recommendations.
-						</span>
-						:
-						<span style={{ marginLeft: "0.5ex" }}>
-							diversify the recommendations along that emotional dimension.
-						</span>
-					}
-				</p>
-			</Row>
-			<Row className="emoToggleInputs">
-				<div className="emoToggleInputsOverlay" style={{ position: "absolute", width: "410px", height: "320px", zIndex: "999", display: "None" }}></div>
-				{
-					emotionNames.map((emotionName, i) => {
-						const currentState = emotionMap.get(emotionName) || 'ignore';
-						return (
-							<Row key={`${emotionName}_${i}`} md={2} style={{ margin: "3px 0" }}>
-								<Col className="d-flex" md={{ span: 2 }} style={{ height: "27px" }}>
-									<p style={{ marginTop: "3px" }}>{emotionName}</p>
-								</Col>
-								<Col md={{ span: 3, offset: 1 }}>
-									<ToggleButtonGroup type="radio" name={emotionName + "_Toggle"} value={currentState}
-										onChange={(evt) => handleEmotionStateChange(emotionName, evt)}>
-										<ToggleButton id={emotionName + "_low"} value={"low"} disabled={isLocked}
-											className={currentState === 'low' ? 'ersToggleBtnChecked' : 'ersToggleBtn'}>
-											Less
-										</ToggleButton>
-										<ToggleButton id={emotionName + "_high"} value={"high"} disabled={isLocked}
-											className={currentState === 'high' ? 'ersToggleBtnChecked' : 'ersToggleBtn'}>
-											More
-										</ToggleButton>
-										<ToggleButton id={emotionName + "_ignore"} value={"ignore"} disabled={isLocked}
-											className={currentState === 'ignore' ? 'ersToggleBtnChecked' : 'ersToggleBtn'}>
-											{defaultLabel}
-										</ToggleButton>
-									</ToggleButtonGroup>
-								</Col>
-							</Row>
-						)
-					}
-					)
-				}
-			</Row>
-			<Row style={{ marginTop: "2em" }}>
-				<Button className="emoToggleResetBtn" style={{ margin: "auto", width: "300px" }} variant="ersCancel" onClick={() => handleReset()} disabled={isLocked}>
-					Reset
-				</Button>
-			</Row>
-		</Container>
-	)
-}
+  return (
+    <div className="container mx-auto">
+      <div className="flex mb-1 mt-7 items-center">
+        <h5 className="text-lg font-medium">Adjust your emotion preferences</h5>
+        <i className="fas fa-info-circle ml-2 -mt-3 text-gray-500" />
+      </div>
+      <div className="mb-4">
+        <p className="text-left">
+          Indicate whether you want the recommended movies to evoke less or more
+          of a certain emotion, or to
+          {defaultLabel === "Ignore" ? (
+            <span className="ml-1">
+              ignore the emotion in weighing the recommendations.
+            </span>
+          ) : (
+            <span className="ml-1">
+              diversify the recommendations along that emotional dimension.
+            </span>
+          )}
+        </p>
+      </div>
+      <div className="emoToggleInputs space-y-1">
+        <div className="emoToggleInputsOverlay absolute w-[410px] h-[320px] z-50 hidden"></div>
+        {emotionNames.map((emotionName, i) => {
+          const currentState = emotionMap.get(emotionName) || "ignore";
+          return (
+            <div key={`${emotionName}_${i}`} className="flex items-center my-1">
+              <div className="w-1/6 h-7 flex items-center">
+                <p className="mt-1">{emotionName}</p>
+              </div>
+              <div className="w-1/3 ml-8 flex">
+                <div className="inline-flex rounded-md shadow-sm" role="group">
+                  <button
+                    type="button"
+                    disabled={isDisabled}
+                    onClick={() => handleEmotionStateChange(emotionName, "low")}
+                    className={`px-4 py-1 text-sm font-medium border border-gray-200 rounded-l-lg focus:z-10 focus:ring-2 focus:ring-amber-500 focus:text-amber-700 ${
+                      currentState === "low"
+                        ? "bg-amber-500 text-white hover:bg-amber-600"
+                        : "bg-white text-gray-900 hover:bg-gray-100 hover:text-amber-700"
+                    } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    Less
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isDisabled}
+                    onClick={() =>
+                      handleEmotionStateChange(emotionName, "high")
+                    }
+                    className={clsx(`px-4 py-1 text-sm font-medium border-t border-b border-gray-200 focus:z-10 focus:ring-2 focus:ring-amber-500 focus:text-amber-700, 
+												cursor-pointer,
+												${
+                          currentState === "high"
+                            ? "bg-amber-500 text-white hover:bg-amber-600"
+                            : "bg-white text-gray-900 hover:bg-gray-100 hover:text-amber-700"
+                        } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`)}
+                  >
+                    More
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isDisabled}
+                    onClick={() =>
+                      handleEmotionStateChange(emotionName, "ignore")
+                    }
+                    className={`px-4 py-1 text-sm font-medium border border-gray-200 rounded-r-lg focus:z-10 focus:ring-2 focus:ring-amber-500 focus:text-amber-700 ${
+                      currentState === "ignore"
+                        ? "bg-amber-500 text-white hover:bg-amber-600"
+                        : "bg-white text-gray-900 hover:bg-gray-100 hover:text-amber-700"
+                    } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    {defaultLabel}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-8 flex justify-center">
+        <button
+          className={`emoToggleResetBtn w-[300px] px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+          onClick={() => handleReset()}
+          disabled={isDisabled}
+        >
+          Reset
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default EmotionToggle;
