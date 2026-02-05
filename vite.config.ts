@@ -2,14 +2,16 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
 
-// https://vite.dev/config/
-export default defineConfig({
+// https://vitejs.dev/config/
+export default defineConfig(() => {
+  return {
     plugins: [react(), tailwindcss()],
+    base: "/rssa-iers-v2/",
     build: {
-        outDir: "build",
+      outDir: "build",
     },
-    base: '/rssa-iers-v2/',
     server: {
-        port: 3350,
-    }
+      port: 3360,
+    },
+  };
 });
