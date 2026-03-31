@@ -21,7 +21,10 @@ import { EmotionMovieDetails } from "../../types/movies";
 import { emotionsDict } from "../../utils/constants";
 import EmotionToggle from "./EmotionToggle";
 import MovieListPanel from "./MovieListPanel";
+import MovieListPanelV2 from "./MovieListPanelV2";
 import MoviePreviewCard from "./MoviePreviewCard";
+import MovieEmotionWheel from "./MovieEmotionWheel";
+//import CombinedWheel from "./CombinedWheel";
 import { useConditionMapping } from "../../hooks/useConditionMapping";
 import { conditionMap } from "./conditionMap";
 
@@ -41,7 +44,7 @@ const initialEmotionMap = new Map<string, EmotionStatusValue>(
   Object.entries(emotionsDict),
 );
 
-const EmotionPreferencesContent: React.FC = () => {
+const EmotionPreferencesWheelV2: React.FC = () => {
   const { studyStep, resetNextButton } =
     useOutletContext<StudyLayoutContextType>();
   const { setIsStepComplete } = useStepCompletion();
@@ -63,11 +66,9 @@ const EmotionPreferencesContent: React.FC = () => {
   // ── Condition code ──────────────────────────────────────────────────────────
   // FOR LOCAL TESTING: hardcoded to "lollipop"
   // FOR REAL STUDY: comment the line below and uncomment the line after it
-const externalCode = "lollipop"; // ← local testing only
+  const externalCode = "wheel-v2"; // ← local testing only
   // const externalCode = participant?.study_condition?.short_code; // ← real study
   // ───────────────────────────────────────────────────────────────────────────
-
-
 
   const { mappedCondition, isLoading: isMappingLoading } =
     useConditionMapping(externalCode);
@@ -355,36 +356,39 @@ const externalCode = "lollipop"; // ← local testing only
   };
 
   const activeMovieElement = useMemo(() => {
-    if (!activeMovie) {
-      return (
-        <div className="container mx-auto">
-          <div className="h-[279px] flex items-center justify-center">
-            <h5 className="text-center text-lg font-medium">
-              Select a movie to see its emotional signature
-            </h5>
-          </div>
-        </div>
-      );
-    }
     return (
       <div className="container mx-auto">
-        <div className="mt-3 h-[279px]">
-          <MoviePreviewCard activeMovie={activeMovie} />
-        </div>
-        <hr className="my-6 border-gray-300" />
-        {Visualizer && (
+        {/* Movie preview — only shown when a movie is hovered/selected */}
+        {activeMovie ? (
           <>
-            <div className="mt-4 text-center">
-              <h5 className="text-lg font-medium">Emotional signature</h5>
+            <div className="mt-3 h-[279px]">
+              <MoviePreviewCard activeMovie={activeMovie} />
             </div>
-            <div className="mt-4 flex justify-center">
-              <Visualizer movie={activeMovie} />
-            </div>
+            <hr className="my-4 border-gray-300" />
           </>
+        ) : (
+          <div className="h-[279px] flex items-center justify-center">
+            <h5 className="text-center text-lg font-medium text-gray-400">
+              Hover or click a movie to highlight its emotional profile
+            </h5>
+          </div>
         )}
+
+        {/* Combined wheel — always visible, shows all 7 spiders stacked */}
+        <div className="mt-2 text-center">
+          <h5 className="text-lg font-medium mb-1">Emotional signatures</h5>
+          <p className="text-xs text-gray-400 mb-2">
+            {activeMovieId
+              ? `Highlighting: ${activeMovie?.title ?? ""}`
+              : "All recommendations · hover or click a movie to isolate its profile"}
+          </p>
+        </div>
+        <div className="flex justify-center">
+          {activeMovie && <MovieEmotionWheel movie={activeMovie} size={260} />}
+        </div>
       </div>
     );
-  }, [activeMovie, Visualizer]);
+  }, [activeMovie, activeMovieId, selectedMovieId, movies, emotionMap]);
 
   if (isLoading) {
     return (
@@ -425,7 +429,7 @@ const externalCode = "lollipop"; // ← local testing only
 
         {/* Middle Panel: Recommendations */}
         <div id="moviePanel" className="w-full lg:w-4/12 px-4 relative">
-          <MovieListPanel
+          <MovieListPanelV2
             id="leftPanel"
             panelTitle={"Recommendations"}
             loading={loading}
@@ -450,4 +454,4 @@ const externalCode = "lollipop"; // ← local testing only
   );
 };
 
-export default EmotionPreferencesContent;
+export default EmotionPreferencesWheelV2;

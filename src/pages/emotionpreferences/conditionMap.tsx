@@ -1,18 +1,19 @@
 import React from "react";
 import EmotionBars from "./EmotionBars";
 import EmotionWheels from "./EmotionWheels";
+import LollipopVisualizer from "./LollipopVisualizer";
 import { EmotionMovieDetails } from "../../types/movies";
 
 // Config from MovieEmotionPreviewPanel.tsx
 const emotionsConfig = [
-  { emo: "Joy", max: 0.318181818181818, min: 0.0382546323968918 },
-  { emo: "Trust", max: 0.253994490358127, min: 0.0817610062893082 },
-  { emo: "Fear", max: 0.209126984126984, min: 0.0273270708795901 },
-  { emo: "Surprise", max: 0.166202984427503, min: 0.0256678889470927 },
-  { emo: "Sadness", max: 0.188492063492063, min: 0.025706940874036 },
-  { emo: "Disgust", max: 0.157538659793814, min: 0.00886524822695036 },
-  { emo: "Anger", max: 0.182929272690844, min: 0.0161596958174905 },
-  { emo: "Anticipation", max: 0.251623376623377, min: 0.0645546921697549 },
+  { emo: "Joy",          max: 0.318181818181818,  min: 0.0382546323968918 },
+  { emo: "Trust",        max: 0.253994490358127,  min: 0.0817610062893082 },
+  { emo: "Fear",         max: 0.209126984126984,  min: 0.0273270708795901 },
+  { emo: "Surprise",     max: 0.166202984427503,  min: 0.0256678889470927 },
+  { emo: "Sadness",      max: 0.188492063492063,  min: 0.025706940874036  },
+  { emo: "Disgust",      max: 0.157538659793814,  min: 0.00886524822695036},
+  { emo: "Anger",        max: 0.182929272690844,  min: 0.0161596958174905 },
+  { emo: "Anticipation", max: 0.251623376623377,  min: 0.0645546921697549 },
 ];
 
 interface VizProps {
@@ -39,10 +40,16 @@ const WheelRoundedWrapper: React.FC<VizProps> = ({ movie }) => (
   <EmotionWheels emotions={emotionsConfig} movie={movie} variant="rounded" />
 );
 
+const LollipopWrapper: React.FC<VizProps> = ({ movie }) => (
+  <LollipopVisualizer emotions={emotionsConfig} movie={movie} />
+);
+
 export type ConditionConfig = {
-  Visualizer: React.FC<VizProps>;
+  Visualizer: React.FC<VizProps> | null;
   controlState: "toggle" | "disabled" | "hidden";
   defaultEmoWeightLabel?: string;
+  useCombinedWheel?: boolean;
+  useCombinedChart?: boolean;
 };
 
 export const conditionMap: Record<string, ConditionConfig> = {
@@ -75,6 +82,29 @@ export const conditionMap: Record<string, ConditionConfig> = {
     Visualizer: BarsWrapper,
     controlState: "toggle",
     defaultEmoWeightLabel: "Diversify",
+  },
+
+  // Lollipop — Individual chart condition
+  LOLLIPOP_TOGGLE: {
+    Visualizer: LollipopWrapper,
+    controlState: "toggle",
+    defaultEmoWeightLabel: "Diversify",
+  },
+
+  // Combined Wheel — all 7 movies on one wheel
+  COMBINED_WHEEL_TOGGLE: {
+    Visualizer: null,
+    controlState: "toggle",
+    defaultEmoWeightLabel: "Diversify",
+    useCombinedWheel: true,
+  },
+
+  // Combined Chart — all 7 movies on one dot plot
+  COMBINED_CHART_TOGGLE: {
+    Visualizer: null,
+    controlState: "toggle",
+    defaultEmoWeightLabel: "Diversify",
+    useCombinedChart: true,
   },
 
   // Default fallback
