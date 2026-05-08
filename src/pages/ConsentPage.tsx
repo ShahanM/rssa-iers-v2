@@ -10,8 +10,7 @@ const ConsentContent: React.FC = () => {
         <span className="font-bold">Voluntary Consent:&nbsp;</span>
         Dr. Bart Knijnenburg is inviting you to volunteer for a research study.
         Dr. Knijnenburg is an associate professor at Clemson University. He will
-        conduct the study with Lijie and Mehtab (both graduate students at
-        Clemson University).
+        conduct the study with Laila Shafiie and Mehtab (both graduate students at Clemson University).
       </p>
 
       <p className="mb-2">
@@ -50,7 +49,7 @@ const ConsentContent: React.FC = () => {
 
       <p className="font-bold mt-4">Incentives</p>
       <p className="mb-2">
-        Participants who complete all tasks will be compensated with $2.40.
+        Participants who complete all tasks will be compensated with $3.00.
         Successful and careful completion of the tasks is a prerequisite for
         payment.
       </p>
@@ -93,12 +92,12 @@ const ConsentContent: React.FC = () => {
       </p>
       <p className="mb-2">
         If you have any study related questions or if any problem arise, please
-        contact Lijie{" "}
+        contact Laila Shafiie{" "}
         <a
-          href="mailto:lydiahsu7@gmail.com"
+          href="mailto:lshafie@clemson.edu"
           className="text-blue-600 hover:underline"
         >
-          lydiahsu7@gmail.com
+          lshafie@clemson.edu
         </a>
         .
       </p>

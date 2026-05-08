@@ -20,8 +20,7 @@ const RSSA_STUDY_ID = import.meta.env.VITE_RSSA_STUDY_ID!;
 const RSSA_API_KEY_ID = import.meta.env.VITE_RSSA_API_KEY_ID!;
 const RSSA_API_KEY_SECRET = import.meta.env.VITE_RSSA_API_KEY_SECRET!;
 
-const api_url_base =
-  process.env.NODE_ENV === "development" ? RSSA_API_DEV : RSSA_API;
+const api_url_base = import.meta.env.VITE_RSSA_API_URL_BASE!;
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
