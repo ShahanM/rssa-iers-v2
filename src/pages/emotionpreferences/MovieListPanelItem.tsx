@@ -1,63 +1,91 @@
-import React from "react";
-import { Movie } from "@rssa-project/study-template";
+import React from 'react';
+import type { EmotionMovie } from '../../types/iers.types';
+import clsx from 'clsx';
 
 interface MovieListPanelItemProps {
-  movie: Movie;
-  selectButtonEnabled?: boolean;
-  activeMovieId: string | null;
-  setActiveMovieId: (id: string | null) => void;
-  selectedMovieId: string | null;
-  setSelectedMovieId: (id: string | null) => void;
+    movie: EmotionMovie;
+    selectButtonEnabled?: boolean;
+    activeMovieId: string | null;
+    setActiveMovieId: (id: string | null) => void;
+    selectedMovieId: string | null;
+    setSelectedMovieId: (id: string | null) => void;
+    pinnedMovieId: string | null;
+    setPinnedMovieId: (id: string | null) => void;
 }
 
 const MovieListPanelItem: React.FC<MovieListPanelItemProps> = ({
-  movie,
-  selectButtonEnabled = false,
-  activeMovieId,
-  setActiveMovieId,
-  selectedMovieId,
-  setSelectedMovieId,
+    movie,
+    selectButtonEnabled = false,
+    activeMovieId,
+    setActiveMovieId,
+    selectedMovieId,
+    setSelectedMovieId,
+    pinnedMovieId,
+    setPinnedMovieId,
 }) => {
-  return (
-    <div
-      className={`flex justify-between items-center p-1 border-b border-gray-200 hover:bg-gray-50 transition-colors ${movie.id === activeMovieId ? "bg-amber-100" : ""}`}
-      onMouseEnter={() => setActiveMovieId(movie.id)}
-    >
-      <div>
-        <img
-          className="w-[45px] h-[67px] object-cover rounded"
-          src={movie.poster}
-          alt={movie.title}
-        />
-      </div>
-      <div className="relative w-[87%] inline-block align-middle">
-        <p className="mb-0 mt-1 text-left ml-2 text-sm font-medium text-gray-700">
-          {movie.title + " (" + movie.year + ")"}
-        </p>
-      </div>
-      {selectButtonEnabled ? (
-        <>
-          <div id={"selectButton_" + movie.id} className="tour-select-button">
-            {movie.id === selectedMovieId ? (
-              <button className="px-3 py-1 text-xs font-medium rounded bg-green-500 text-white cursor-default">
-                {" "}
-                Selected
-              </button>
-            ) : (
-              <button
-                className="px-3 py-1 text-xs font-medium rounded bg-amber-500 text-white hover:bg-amber-600 transition-colors"
-                onClick={() => setSelectedMovieId(movie.id)}
-              >
-                Select
-              </button>
+    const safeMovieId = String(movie.id);
+    const isActive = safeMovieId === String(activeMovieId);
+    const isPinned = safeMovieId === String(pinnedMovieId);
+
+    const handleMouseEnter = () => setActiveMovieId(safeMovieId);
+    const handleMouseLeave = () => setActiveMovieId(pinnedMovieId);
+    const handleClick = () => {
+        if (isPinned) {
+            setPinnedMovieId(null);
+        } else {
+            setPinnedMovieId(safeMovieId);
+            setActiveMovieId(safeMovieId);
+        }
+    };
+
+    return (
+        <li
+            className={clsx(
+                'flex justify-between items-center p-1',
+                'border-b border-gray-200 transition-colors cursor-pointer',
+                isPinned ? 'bg-amber-200' : isActive ? 'bg-amber-100' : 'hover:bg-gray-50'
             )}
-          </div>
-        </>
-      ) : (
-        ""
-      )}
-    </div>
-  );
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onClick={handleClick}
+        >
+            <div className={clsx(selectButtonEnabled ? 'w-1/3' : 'w-1/4')}>
+                <img className="h-26 object-cover rounded-lg" src={movie.tmdb_poster} alt={movie.title} />
+            </div>
+            <div className="w-2/3">
+                <p className="text-left text-sm font-medium text-gray-700">
+                    {movie.title} ({movie.year})
+                </p>
+            </div>
+            {selectButtonEnabled && (
+                <div id={'selectButton_' + safeMovieId} className="tour-select-button">
+                    {safeMovieId === String(selectedMovieId) ? (
+                        <button
+                            className={clsx(
+                                'p-2 me-2 text-md font-medium rounded-lg bg-green-500 text-white cursor-default'
+                            )}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            Selected
+                        </button>
+                    ) : (
+                        <button
+                            className={clsx(
+                                'p-2 me-2 text-md font-medium rounded-lg',
+                                'bg-amber-500 text-white hover:bg-amber-600 transition-colors'
+                            )}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedMovieId(safeMovieId);
+                            }}
+                        >
+                            Select
+                        </button>
+                    )}
+                </div>
+            )}
+        </li>
+    );
 };
 
 export default MovieListPanelItem;

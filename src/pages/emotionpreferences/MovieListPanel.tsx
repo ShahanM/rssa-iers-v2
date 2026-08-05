@@ -1,78 +1,94 @@
-import { EmotionMovieDetails } from "../../types/movies";
-import { EmotionStatusValue } from "./EmotionPreferences";
-import MovieListPanelItem from "./MovieListPanelItem";
+import React, { useEffect, useRef, useState } from 'react';
+import { type EmotionMovie } from '../../types/iers.types';
+import MovieListPanelItem from './MovieListPanelItem';
 
 interface MovieListPanelProps {
-  id: string;
-  panelTitle: string;
-  loading?: boolean;
-  selectButtonEnabled?: boolean;
-  movies: Map<string, EmotionMovieDetails>;
-  emotionMap: Map<string, EmotionStatusValue>;
-  activeMovieId: string | null;
-  setActiveMovieId: (id: string | null) => void;
-  selectedMovieId: string | null;
-  setSelectedMovieId: (id: string | null) => void;
+    id: string;
+    panelTitle: string;
+    loading?: boolean;
+    selectButtonEnabled?: boolean;
+    movies: EmotionMovie[];
+    activeMovieId: string | null;
+    setActiveMovieId: (id: string | null) => void;
+    selectedMovieId: string | null;
+    setSelectedMovieId: (id: string | null) => void;
 }
 
 const MovieListPanel: React.FC<MovieListPanelProps> = ({
-  id,
-  panelTitle,
-  loading = false,
-  selectButtonEnabled = false,
-  movies,
-  emotionMap,
-  activeMovieId,
-  setActiveMovieId,
-  selectedMovieId,
-  setSelectedMovieId,
+    id,
+    panelTitle,
+    loading = false,
+    selectButtonEnabled = false,
+    movies,
+    activeMovieId,
+    setActiveMovieId,
+    selectedMovieId,
+    setSelectedMovieId,
 }) => {
-  return (
-    <div id={id} className="recommendationsListContainer h-full flex flex-col">
-      <div className="flex flex-col items-center justify-center bg-gray-200 rounded-t-md p-2 text-center">
-        <h5 className="text-lg font-medium">{panelTitle}</h5>
-      </div>
-      <div className="relative flex-grow" style={{ minHeight: "504px" }}>
-        {loading && (
-          <div className="absolute inset-0 bg-black opacity-30 z-50 rounded-b-md flex items-center justify-center">
-            <svg
-              className="animate-spin h-10 w-10 text-white"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-          </div>
-        )}
-        <ul className="list-none p-0 m-0 overflow-y-auto h-full border border-gray-200 rounded-b-md bg-white">
-          {[...movies.values()].map((movie) => (
-            <MovieListPanelItem
-              key={movie.id}
-              movie={movie}
-              selectButtonEnabled={selectButtonEnabled}
-              activeMovieId={activeMovieId}
-              setActiveMovieId={setActiveMovieId}
-              selectedMovieId={selectedMovieId}
-              setSelectedMovieId={setSelectedMovieId}
-            />
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
+    const skeletonSlots = Array.from({ length: 7 });
+    const [pinnedMovieId, setPinnedMovieId] = useState<string | null>(null);
+    const panelRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+                setPinnedMovieId(null);
+                setActiveMovieId(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [setActiveMovieId]);
+
+    return (
+        <div id={id} ref={panelRef} className="recommendationsListContainer h-full flex flex-col">
+            <div className="flex flex-col items-center justify-center bg-gray-200 rounded-t-md p-2 text-center">
+                <h5 className="text-lg font-medium">{panelTitle}</h5>
+            </div>
+
+            <div className="relative grow" style={{ minHeight: '504px' }}>
+                <ul className="list-none p-0 m-0 overflow-y-auto h-full border border-gray-200 rounded-b-md bg-white">
+                    {loading || !movies
+                        ? skeletonSlots.map((_, index) => (
+                              <li
+                                  key={`skeleton-${index}`}
+                                  className="flex justify-between items-center p-1 border-b border-gray-200 animate-pulse"
+                              >
+                                  <div>
+                                      <div className="h-23 w-16 bg-gray-300 rounded"></div>
+                                  </div>
+
+                                  <div className="relative w-[87%] inline-block align-middle ml-2">
+                                      <div className="h-4 bg-gray-300 rounded w-2/4 mb-2 mt-1"></div>
+                                      <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                                  </div>
+
+                                  {selectButtonEnabled && (
+                                      <div className="pr-2">
+                                          <div className="h-6 w-16 bg-gray-300 rounded"></div>
+                                      </div>
+                                  )}
+                              </li>
+                          ))
+                        : movies.map((movie) => {
+                              return (
+                                  <MovieListPanelItem
+                                      key={movie.id}
+                                      movie={movie}
+                                      selectButtonEnabled={selectButtonEnabled}
+                                      activeMovieId={activeMovieId}
+                                      setActiveMovieId={setActiveMovieId}
+                                      selectedMovieId={selectedMovieId}
+                                      setSelectedMovieId={setSelectedMovieId}
+                                      pinnedMovieId={pinnedMovieId}
+                                      setPinnedMovieId={setPinnedMovieId}
+                                  />
+                              );
+                          })}
+                </ul>
+            </div>
+        </div>
+    );
 };
 
 export default MovieListPanel;

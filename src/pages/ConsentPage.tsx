@@ -10,7 +10,8 @@ const ConsentContent: React.FC = () => {
         <span className="font-bold">Voluntary Consent:&nbsp;</span>
         Dr. Bart Knijnenburg is inviting you to volunteer for a research study.
         Dr. Knijnenburg is an associate professor at Clemson University. He will
-        conduct the study with Laila Shafiie and Mehtab (both graduate students at Clemson University).
+        conduct the study with Laila Shafiie and Mehtab (both graduate students
+        at Clemson University).
       </p>
 
       <p className="mb-2">
@@ -106,14 +107,8 @@ const ConsentContent: React.FC = () => {
 };
 
 const ConsentPage: React.FC = () => {
-  // FIXME: These should be environment variables or constants
-  const PARTICIPANT_TYPE_ID = "149078d0-cece-4b2c-81cd-a7df4f76d15a";
-  const PARTICIPANT_EXTERNAL_ID = "test_user";
-
   return (
     <GenericConsentPage
-      participantTypeId={PARTICIPANT_TYPE_ID}
-      externalId={PARTICIPANT_EXTERNAL_ID}
       itemTitle="Testing an Interactive Movie Recommender System Using Emotions for Diversification"
       title="" /// Title is embedded in content for specific formatting in original
     >
